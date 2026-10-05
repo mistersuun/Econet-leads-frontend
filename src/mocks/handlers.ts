@@ -10,10 +10,13 @@ import type {
   LogCallRequest,
   OutcomeCount,
   ScraperJobDTO,
+  TenderDTO,
+  TenderStatus,
 } from '../api/types'
-import { CALL_OUTCOMES, LEAD_STATUSES } from '../api/types'
+import { CALL_OUTCOMES, LEAD_STATUSES, TENDER_SOURCES, TENDER_STATUSES } from '../api/types'
 import { CONVERSATION_OUTCOMES, TERMINAL, applyCall, createDb, parseLocal, queueFor, startOfDay, type Db } from './db'
 import { USERS, isoLocal, makeLead, mockId, type MockUser } from './seed'
+import { NEW_SOURCE_NAMES, makeImportedTender, makePermitLead, makeRegisterLead } from './seedSources'
 
 const ACCESS_TTL_MS = 15 * 60_000
 
@@ -101,7 +104,8 @@ function filterLeads(d: Db, q: URLSearchParams, user: MockUser, now: Date): Busi
     if (type && l.businessType !== type) return false
     if (city && l.addressCity !== city) return false
     if (source && l.dataSource !== source) return false
-    if (bool(q, 'hasPhone') && !l.phone) return false
+    if (q.get('hasPhone') === 'true' && !l.phone) return false
+    if (q.get('hasPhone') === 'false' && l.phone) return false
     if (assigned) {
       const id = assigned === 'me' ? user.userId : assigned
       if (l.assignedToId !== id) return false
@@ -172,7 +176,13 @@ function progressJobs(d: Db, now: Date) {
       const added = d.r.int(3, 7)
       const source = d.sources.find((s) => s.id === job.source?.id)
       for (let i = 0; i < added; i++) {
-        const lead = makeLead(d.r, now)
+        const name = source?.sourceName
+        if (name === NEW_SOURCE_NAMES.canadabuys || name === NEW_SOURCE_NAMES.seao) {
+          d.tenders.push(makeImportedTender(d.r, now, name === NEW_SOURCE_NAMES.seao ? 'SEAO' : 'CANADABUYS'))
+          continue
+        }
+        const lead =
+          name === NEW_SOURCE_NAMES.register ? makeRegisterLead(d.r, now) : name === NEW_SOURCE_NAMES.permits ? makePermitLead(d.r, now) : makeLead(d.r, now)
         if (source) lead.dataSource = source.sourceName
         d.leads.push(lead)
       }
@@ -188,6 +198,10 @@ function progressJobs(d: Db, now: Date) {
       }
     }
   }
+}
+
+function isOpenTender(t: TenderDTO, now: Date): boolean {
+  return !!t.closingAt && parseLocal(t.closingAt) >= now
 }
 
 function page<T>(items: T[], q: URLSearchParams, defaultSize = 20) {
@@ -266,6 +280,28 @@ export function handle(req: Req): Result {
     }
     return { json: lead }
   }
+  if ((m = /^\/api\/businesses\/([^/]+)\/phone$/.exec(path)) && method === 'PATCH') {
+    requireRole(user, 'ADMIN', 'USER')
+    const lead = findLead(d, m[1])
+    const { phone } = (req.body ?? {}) as { phone?: string }
+    const all = String(phone ?? '').replace(/\D/g, '')
+    const digits = all.length === 11 && all.startsWith('1') ? all.slice(1) : all
+    if (!/^[2-9]\d{2}[2-9]\d{6}$/.test(digits)) {
+      throw new HttpError(400, 'Numéro de téléphone invalide : 10 chiffres attendus, ex. (514) 555-1234', { phone: 'Format invalide' })
+    }
+    // 555-0100…0199 is reserved for fiction: lets the demo show a server-side rejection.
+    if (digits.slice(3, 8) === '55501') throw new HttpError(400, 'Numéro fictif (555-01xx) refusé par le serveur', { phone: 'Numéro fictif' })
+    lead.phone = digits
+    // A number found and checked by a person is a strong signal.
+    lead.dataQualityScore = Math.min(100, (lead.dataQualityScore ?? 0) + 45)
+    lead.updatedAt = isoLocal(now)
+    d.contacts.push({
+      id: mockId('c'), businessId: lead.id, businessName: lead.businessName, contactDate: isoLocal(now), contactType: 'NOTE',
+      contactStatus: 'NOTE', contactPerson: null, notes: 'Numéro ajouté', nextAction: null, nextActionDate: null,
+      userId: user.userId, username: user.username, outcome: null, createdAt: isoLocal(now),
+    })
+    return { json: lead }
+  }
   if ((m = /^\/api\/businesses\/([^/]+)$/.exec(path))) {
     const lead = findLead(d, m[1])
     if (method === 'GET') return { json: lead }
@@ -338,6 +374,7 @@ export function handle(req: Req): Result {
           pipelineValue: d.leads
             .filter((l) => l.leadStatus === 'INTERESTED' || l.leadStatus === 'QUOTE_SENT')
             .reduce((s, l) => s + (l.estimatedValue ?? 0), 0),
+          toEnrich: d.leads.filter((l) => !l.phone && !TERMINAL.includes(l.leadStatus)).length,
         }
         return { json: summary }
       }
@@ -392,21 +429,85 @@ export function handle(req: Req): Result {
     }
   }
 
+  // Tenders
+  if (path === '/api/tenders/summary' && method === 'GET') {
+    const open = d.tenders.filter((t) => isOpenTender(t, now) && !['WON', 'LOST', 'IGNORED'].includes(t.status))
+    const weekEnd = new Date(now.getTime() + 7 * 86400_000)
+    return {
+      json: {
+        open: open.length,
+        closingThisWeek: open.filter((t) => parseLocal(t.closingAt!) <= weekEnd).length,
+        bidding: d.tenders.filter((t) => t.status === 'BIDDING').length,
+        submitted: d.tenders.filter((t) => t.status === 'SUBMITTED').length,
+        won: d.tenders.filter((t) => t.status === 'WON').length,
+      },
+    }
+  }
+  if (path === '/api/tenders' && method === 'GET') {
+    const text = (q.get('q') ?? '').trim().toLowerCase()
+    const status = q.get('status')
+    const source = q.get('source')
+    if (status && !TENDER_STATUSES.includes(status as TenderStatus)) throw new HttpError(400, 'Statut inconnu')
+    if (source && !(TENDER_SOURCES as readonly string[]).includes(source)) throw new HttpError(400, 'Source inconnue')
+    const list = d.tenders.filter((t) => {
+      if (text && !`${t.title} ${t.buyer} ${t.externalId} ${t.region ?? ''}`.toLowerCase().includes(text)) return false
+      if (status && t.status !== status) return false
+      if (source && t.source !== source) return false
+      if (bool(q, 'openOnly') && !isOpenTender(t, now)) return false
+      return true
+    })
+    const key = (q.get('sortBy') ?? 'closingAt') as 'closingAt' | 'publishedAt' | 'createdAt'
+    const sign = (q.get('sortDirection') ?? 'ASC') === 'DESC' ? -1 : 1
+    list.sort((a, b) => {
+      const va = a[key]
+      const vb = b[key]
+      if (va === vb) return 0
+      if (!va) return 1
+      if (!vb) return -1
+      return va.localeCompare(vb) * sign
+    })
+    return { json: page(list, q) }
+  }
+  if ((m = /^\/api\/tenders\/([^/]+)$/.exec(path))) {
+    const tender = d.tenders.find((t) => t.id === m![1])
+    if (!tender) throw new HttpError(404, 'Appel d’offres introuvable')
+    if (method === 'GET') return { json: tender }
+    if (method === 'PATCH') {
+      requireRole(user, 'ADMIN', 'USER')
+      const body = (req.body ?? {}) as { status?: string; notes?: string | null }
+      if (body.status !== undefined) {
+        if (!TENDER_STATUSES.includes(body.status as TenderStatus)) throw new HttpError(400, 'Statut invalide', { status: 'Valeur inconnue' })
+        tender.status = body.status as TenderStatus
+      }
+      if (body.notes !== undefined) {
+        if (body.notes && body.notes.length > 4000) throw new HttpError(400, 'Notes trop longues (4000 caractères max.)', { notes: 'Trop long' })
+        tender.notes = body.notes?.trim() ? body.notes : null
+      }
+      tender.updatedAt = isoLocal(now)
+      return { json: tender }
+    }
+  }
+
   // Data sources & jobs (ADMIN)
   if (path.startsWith('/api/data-sources') || path.startsWith('/api/scraper-jobs')) {
     requireRole(user, 'ADMIN')
     progressJobs(d, now)
     if (method === 'GET' && path === '/api/data-sources') return { json: d.sources }
-    if ((m = /^\/api\/data-sources\/([^/]+)\/import$/.exec(path)) && method === 'POST') {
+    if ((m = /^\/api\/data-sources\/([^/]+)\/(import|upload)$/.exec(path)) && method === 'POST') {
       const s = d.sources.find((x) => x.id === m![1])
       if (!s) throw new HttpError(404, 'Source introuvable')
+      if (m[2] === 'upload') {
+        const file = (req.body ?? {}) as { name?: string; size?: number }
+        if (s.sourceType !== 'BULK_FILE') throw new HttpError(400, 'Cette source n’accepte pas de fichier')
+        if (!file.name?.toLowerCase().endsWith('.zip')) throw new HttpError(400, 'Fichier ZIP attendu (registre des entreprises)', { file: 'Format invalide' })
+      }
       if (!s.active) throw new HttpError(400, 'Data source is not active')
       if (d.jobs.some((j) => j.source?.id === s.id && (j.status === 'RUNNING' || j.status === 'PENDING')))
         throw new HttpError(409, 'Une importation est déjà en cours pour cette source')
       const job: ScraperJobDTO = {
         id: mockId('j'),
         source: { id: s.id, sourceName: s.sourceName, sourceType: s.sourceType, sourceUrl: s.sourceUrl },
-        jobType: 'MANUAL_SCRAPE',
+        jobType: m[2] === 'upload' ? 'FULL_SYNC' : 'MANUAL_SCRAPE',
         status: 'PENDING',
         startedAt: isoLocal(now),
         completedAt: null,

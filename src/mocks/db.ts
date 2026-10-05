@@ -9,6 +9,7 @@ import type {
   LeadStatus,
   LogCallRequest,
   ScraperJobDTO,
+  TenderDTO,
 } from '../api/types'
 import {
   CONTACT_PEOPLE,
@@ -24,6 +25,7 @@ import {
   type MockUser,
   type Rng,
 } from './seed'
+import { makeEnrichLeads, makeNewSources, makeTenders, NEW_SOURCE_NAMES } from './seedSources'
 
 export const TERMINAL: LeadStatus[] = ['WON', 'LOST', 'DO_NOT_CALL']
 export const CONVERSATION_OUTCOMES: CallOutcome[] = ['INTERESTED', 'QUOTE_SENT', 'WON', 'NOT_INTERESTED', 'CALLBACK']
@@ -33,6 +35,7 @@ export interface Db {
   contacts: ContactDTO[]
   sources: DataSource[]
   jobs: ScraperJobDTO[]
+  tenders: TenderDTO[]
   r: Rng
 }
 
@@ -179,7 +182,7 @@ export function createDb(now: Date = new Date()): Db {
     created.setHours(3, r.int(0, 59), r.int(0, 59), 0)
     leads.push(makeLead(r, created))
   }
-  const db: Db = { leads, contacts: [], sources, jobs: makeHistoricalJobs(sources, now, r), r }
+  const db: Db = { leads, contacts: [], sources, jobs: makeHistoricalJobs(sources, now, r), tenders: [], r }
 
   // Simulate the last 60 days of calling by the two agents (and the admin now and then).
   const callers = USERS.filter((u) => u.role !== 'VIEWER')
@@ -236,8 +239,19 @@ export function createDb(now: Date = new Date()): Db {
     } else return
     l.nextFollowUpAt = isoLocal(d)
   })
+  // Addendum 2 sources: leads without a phone (to enrich) and public tenders.
+  // Separate generator so the base data above stays identical.
+  const r2 = rng(20261006)
+  db.sources.push(...makeNewSources(now))
+  db.leads.push(...makeEnrichLeads(r2, now))
+  db.tenders = makeTenders(r2, now)
+
   // Recompute source record counts from leads.
   for (const s of db.sources) s.recordsCount = db.leads.filter((l) => l.dataSource === s.sourceName).length * 9 + r.int(10, 90)
+  const tenderSource = { [NEW_SOURCE_NAMES.canadabuys]: 'CANADABUYS', [NEW_SOURCE_NAMES.seao]: 'SEAO' } as Record<string, string>
+  for (const s of db.sources) {
+    if (tenderSource[s.sourceName]) s.recordsCount = db.tenders.filter((t) => t.source === tenderSource[s.sourceName]).length
+  }
   return db
 }
 
