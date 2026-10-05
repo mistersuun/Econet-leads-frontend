@@ -23,6 +23,7 @@ import {
   getOutcomes,
   getPipeline,
   getSummary,
+  getTenderSummary,
 } from '../api/endpoints'
 import type { ActivityPoint, BreakdownDimension, DashboardSummary, DateRange } from '../api/types'
 import { DateRangePicker } from '../components/DateRangePicker'
@@ -160,6 +161,7 @@ function Tile({ className, to, children }: { className: string; to?: string; chi
 function Bento({ summary, prev, range }: { summary: UseQueryResult<DashboardSummary>; prev?: DashboardSummary; range: DateRange }) {
   // Same key as the activity chart below: served from the TanStack Query cache, no extra request.
   const activity = useQuery({ queryKey: ['activity', range], queryFn: () => getActivity(range) })
+  const tenders = useQuery({ queryKey: ['tender-summary'], queryFn: getTenderSummary })
   const rows = useMemo(() => (activity.data ? bucketActivity(activity.data) : null), [activity.data])
 
   if (summary.isError) {
@@ -231,6 +233,30 @@ function Bento({ summary, prev, range }: { summary: UseQueryResult<DashboardSumm
         <span className="tile-label">Devis envoyés</span>
         {val((x) => <span className="tile-value num">{formatNumber(x.quotesSent)}</span>)}
         {s && <DeltaText d={{ kind: 'count', current: s.quotesSent, previous: prev?.quotesSent }} suffix={vs} />}
+      </Tile>
+
+      <Tile className="tile-sm tile-enrich" to="/enrich">
+        <span className="tile-label">À enrichir</span>
+        {val((x) => <span className="tile-value num">{formatNumber(x.toEnrich ?? 0)}</span>)}
+        <span className="tile-foot">Leads sans téléphone</span>
+      </Tile>
+
+      <Tile className="tile-sm tile-tenders" to="/tenders">
+        <span className="tile-label">Appels d’offres ouverts</span>
+        {tenders.data ? (
+          <span className="tile-value num">{formatNumber(tenders.data.open)}</span>
+        ) : tenders.isError ? (
+          <span className="tile-value muted">—</span>
+        ) : (
+          <Skeleton height={40} width="50%" />
+        )}
+        {tenders.data && (
+          <span className="tile-foot num">
+            {tenders.data.closingThisWeek > 0
+              ? `${formatNumber(tenders.data.closingThisWeek)} clôture${tenders.data.closingThisWeek > 1 ? 'nt' : ''} cette semaine`
+              : 'Aucune clôture cette semaine'}
+          </span>
+        )}
       </Tile>
 
       <Tile className="tile-sm tile-pipe" to={leadsHref({ status: ['INTERESTED', 'QUOTE_SENT'] })}>
