@@ -1,0 +1,116 @@
+.call-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  grid-template-areas: 'lead form' 'history form';
+  grid-template-rows: auto 1fr;
+  gap: 16px;
+  align-items: start;
+}
+.call-lead {
+  grid-area: lead;
+}
+.call-form {
+  grid-area: form;
+}
+.call-history-block {
+  grid-area: history;
+}
+.call-lead {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.call-form {
+  position: sticky;
+  top: 20px;
+}
+.queue-pos {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.queue-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: #ececf0;
+  overflow: hidden;
+}
+.queue-progress span {
+  display: block;
+  height: 100%;
+  background: var(--sage);
+  transition: width 0.3s;
+}
+.call-history-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.call-counters {
+  display: flex;
+  gap: 10px;
+}
+.counter {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  min-width: 112px;
+}
+.counter strong {
+  font-size: 1.35rem;
+  font-weight: 650;
+  line-height: 1.15;
+}
+.counter span {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.notice {
+  background: var(--info-bg);
+  border: 1px solid #d6e0ef;
+  color: #2c4a78;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  margin-bottom: 16px;
+}
+@media (max-width: 1080px) {
+  /* Narrow screens: lead identity, then the form, then history. */
+  .call-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'lead' 'form' 'history';
+    grid-template-rows: auto;
+  }
+  .call-form {
+    position: static;
+  }
+}
+@media (max-width: 560px) {
+  .call-page .page-header {
+    margin-bottom: 14px;
+    gap: 10px;
+  }
+  .call-page .page-header .subtitle {
+    display: none;
+  }
+  .call-counters {
+    width: 100%;
+  }
+  .counter {
+    flex: 1;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 6px;
+    padding: 8px 12px;
+    min-width: 0;
+  }
+  .counter strong {
+    font-size: 1.1rem;
+  }
+  .call-page .card-pad {
+    padding: 16px;
+  }
+}

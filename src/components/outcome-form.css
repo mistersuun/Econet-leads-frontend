@@ -1,0 +1,101 @@
+.outcome-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.outcomes-grid {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+.outcomes-grid legend {
+  margin-bottom: 8px;
+  padding: 0;
+}
+.outcome-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-strong);
+  background: var(--card);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s, box-shadow 0.1s;
+  line-height: 1.2;
+}
+.outcome-btn::before {
+  content: '';
+  width: 4px;
+  align-self: stretch;
+  border-radius: 2px;
+  background: var(--oc);
+  flex: none;
+}
+.outcome-btn kbd {
+  font: 600 0.72rem/1 var(--font);
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 3px 5px;
+  font-variant-numeric: tabular-nums;
+}
+.outcome-btn:hover {
+  border-color: var(--oc);
+}
+.outcome-btn[aria-pressed='true'] {
+  border-color: var(--oc);
+  background: color-mix(in srgb, var(--oc) 12%, white);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--oc) 60%, transparent);
+}
+.outcome-btn[aria-pressed='true'] kbd {
+  background: var(--oc);
+  color: #fff;
+  border-color: var(--oc);
+}
+.outcome-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.outcome-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px 14px;
+}
+.outcome-fields .span-all {
+  grid-column: 1 / -1;
+}
+.outcome-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+@media (max-width: 560px) {
+  .outcomes-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .outcome-btn {
+    min-height: 50px;
+    font-size: 0.88rem;
+  }
+  .outcome-btn kbd {
+    display: none;
+  }
+  .hide-mobile {
+    display: none;
+  }
+  .outcome-actions .btn-primary {
+    flex: 1;
+  }
+}

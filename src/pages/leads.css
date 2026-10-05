@@ -1,0 +1,89 @@
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+.filters .select,
+.filters .multiselect {
+  width: auto;
+  min-width: 150px;
+  max-width: 220px;
+  flex: 0 1 auto;
+}
+.filters-search {
+  flex: 1 1 240px;
+  min-width: 200px;
+}
+.filters-checks {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 0 4px;
+}
+.select.has-value {
+  border-color: var(--sage);
+  background-color: var(--mint);
+}
+.multiselect {
+  position: relative;
+}
+.multiselect-btn {
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+.multiselect-pop {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 220px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+}
+.multiselect-opt {
+  padding: 7px 8px;
+  border-radius: 8px;
+}
+.multiselect-opt:hover {
+  background: var(--surface);
+}
+
+.leads-table-card {
+  overflow: hidden;
+}
+.leads-table tbody tr.selected td {
+  background: var(--mint);
+}
+.table-wrap.is-stale {
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+@media (max-width: 640px) {
+  .filters .select,
+  .filters .multiselect {
+    flex: 1 1 calc(50% - 5px);
+    max-width: none;
+    min-width: 0;
+  }
+  .filters-search {
+    flex-basis: 100%;
+  }
+}
+
+.filters .multiselect .select {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}

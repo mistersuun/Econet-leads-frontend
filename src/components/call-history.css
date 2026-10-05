@@ -1,0 +1,55 @@
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+.timeline li {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding: 0 0 16px;
+}
+.timeline li:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 16px;
+  bottom: 2px;
+  width: 2px;
+  background: var(--border);
+}
+.tl-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex: none;
+  box-shadow: 0 0 0 3px var(--card);
+}
+.tl-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+.tl-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+}
+.tl-notes {
+  font-size: 0.88rem;
+  color: var(--ink-2);
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-top: 2px;
+  white-space: pre-wrap;
+}
+.timeline.compact li {
+  padding-bottom: 12px;
+}

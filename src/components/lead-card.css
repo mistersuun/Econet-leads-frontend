@@ -1,0 +1,124 @@
+.lead-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.lead-card-name {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.lead-card-type {
+  margin-top: 4px;
+  font-size: 0.92rem;
+}
+.phone-cta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: var(--deep);
+  color: #fff;
+  text-decoration: none;
+  transition: background 0.12s;
+}
+.phone-cta:hover {
+  background: #2a4b3f;
+  text-decoration: none;
+}
+.phone-cta:focus-visible {
+  outline: 3px solid var(--sage);
+  outline-offset: 3px;
+}
+.phone-cta-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.phone-cta-number {
+  display: block;
+  font-size: 1.6rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+.phone-cta-hint {
+  display: block;
+  font-size: 0.78rem;
+  color: #b7cec5;
+}
+.lead-meta {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.92rem;
+}
+.lead-meta li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+.lead-meta li svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--muted);
+}
+.lead-meta a {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.lead-facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.lead-facts dt {
+  font-size: 0.74rem;
+  color: var(--muted);
+  font-weight: 500;
+  margin-bottom: 3px;
+}
+.lead-facts dd {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+@media (max-width: 560px) {
+  .lead-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .lead-card-name {
+    font-size: 1.35rem;
+  }
+}
+.quality {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.quality-track {
+  width: 44px;
+  height: 6px;
+  background: #ececf0;
+  border-radius: 3px;
+  overflow: hidden;
+  display: inline-block;
+}
+.quality-track span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+}

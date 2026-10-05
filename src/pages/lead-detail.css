@@ -1,0 +1,34 @@
+.detail-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 560px) {
+  .detail-two {
+    grid-template-columns: 1fr;
+  }
+}
+.assignee {
+  font-weight: 600;
+  font-size: 0.92rem;
+  padding: 6px 0;
+}
+.fields {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 20px;
+}
+.fields dt {
+  font-size: 0.74rem;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+.fields dd {
+  margin: 0;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+.drawer .lead-card-name {
+  font-size: 1.35rem;
+}
