@@ -157,3 +157,79 @@ export function saveBlob(blob: Blob, filename: string): void {
   a.remove()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
+
+// ---- Multipart upload with progress (XHR: fetch has no upload progress events)
+
+export interface UploadProgress {
+  loaded: number
+  total: number
+}
+
+export interface UploadRequest {
+  url: string
+  body: FormData
+  headers: Record<string, string>
+  onProgress?: (p: UploadProgress) => void
+  signal?: AbortSignal
+}
+
+/** Raw result of one upload attempt; `status` 0 means the request never reached the server. */
+export interface UploadResult {
+  status: number
+  text: string
+}
+
+export type UploadTransport = (req: UploadRequest) => Promise<UploadResult>
+
+const xhrTransport: UploadTransport = (req) =>
+  new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', req.url)
+    for (const [k, v] of Object.entries(req.headers)) xhr.setRequestHeader(k, v)
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) req.onProgress?.({ loaded: e.loaded, total: e.total })
+    }
+    xhr.onload = () => resolve({ status: xhr.status, text: xhr.responseText })
+    xhr.onerror = () => resolve({ status: 0, text: '' })
+    xhr.onabort = () => reject(new DOMException('Aborted', 'AbortError'))
+    if (req.signal) {
+      if (req.signal.aborted) {
+        reject(new DOMException('Aborted', 'AbortError'))
+        return
+      }
+      req.signal.addEventListener('abort', () => xhr.abort(), { once: true })
+    }
+    xhr.send(req.body)
+  })
+
+let uploadTransport: UploadTransport = xhrTransport
+
+/** Replace the upload transport (used by the dev-only mock backend). */
+export function setUploadTransport(t: UploadTransport): void {
+  uploadTransport = t
+}
+
+/**
+ * POST a multipart body with upload progress. Same auth rules as `apiRequest`:
+ * bearer token, one refresh + retry on 401, `{error}` bodies thrown as ApiError.
+ */
+export async function apiUpload<T>(
+  path: string,
+  body: FormData,
+  opts: { onProgress?: (p: UploadProgress) => void; signal?: AbortSignal } = {},
+): Promise<T> {
+  const attempt = () => {
+    const token = getSession()?.accessToken
+    const headers: Record<string, string> = { Accept: 'application/json' }
+    if (token) headers.Authorization = `Bearer ${token}`
+    return uploadTransport({ url: `${API_URL}${path}`, body, headers, onProgress: opts.onProgress, signal: opts.signal })
+  }
+  let res = await attempt()
+  if (res.status === 401) {
+    if (await refreshSession()) res = await attempt()
+    if (res.status === 401) setSession(null)
+  }
+  if (res.status === 0) throw new ApiError('Impossible de joindre le serveur. Vérifiez votre connexion.', 0)
+  if (res.status < 200 || res.status >= 300) throw await parseError(new Response(res.text, { status: res.status }))
+  return (res.text ? JSON.parse(res.text) : undefined) as T
+}

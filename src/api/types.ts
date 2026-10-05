@@ -96,6 +96,11 @@ export interface BusinessDTO {
   createdAt: string
   updatedAt: string
   lastVerified: string | null
+  /**
+   * Short source-specific facts to show the caller, e.g. a permit's
+   * `{ "Travaux": "Transformation", "Coût estimé": "450 000 $" }`. Key order is display order.
+   */
+  sourceDetails?: Record<string, string> | null
 }
 
 export type LeadSortField =
@@ -138,6 +143,11 @@ export interface BusinessUpdateRequest {
   assignedToId?: string | null
 }
 
+/** PATCH /api/businesses/{id}/phone — the server normalises and validates (10-digit NANP, optional +1). */
+export interface PhoneUpdateRequest {
+  phone: string
+}
+
 export interface StatusUpdateRequest {
   status: LeadStatus
   note?: string
@@ -149,7 +159,7 @@ export interface LeadFilters {
   dataSources: string[]
 }
 
-export type ContactType = 'APPEL' | 'EMAIL' | 'VISITE'
+export type ContactType = 'APPEL' | 'EMAIL' | 'VISITE' | 'NOTE'
 
 export interface ContactDTO {
   id: string
@@ -200,6 +210,8 @@ export interface DashboardSummary {
   followUpsDue: number
   followUpsOverdue: number
   pipelineValue: number
+  /** Leads without a phone whose status is not WON, LOST or DO_NOT_CALL. Optional until every backend serves it. */
+  toEnrich?: number
 }
 
 export interface PipelineEntry {
@@ -236,7 +248,7 @@ export interface LeaderboardRow {
   won: number
 }
 
-export type SourceType = 'CKAN_API' | 'WEB_SCRAPER' | 'CSV_DOWNLOAD' | 'MANUAL'
+export type SourceType = 'CKAN_API' | 'WEB_SCRAPER' | 'CSV_DOWNLOAD' | 'BULK_FILE' | 'MANUAL'
 export type SyncFrequency = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'MANUAL'
 
 export interface DataSource {
@@ -296,4 +308,60 @@ export function jobSourceName(job: ScraperJobDTO): string {
 
 export function jobSourceId(job: ScraperJobDTO): string | null {
   return job.source?.id ?? job.sourceId ?? null
+}
+
+// ---- Public tenders (appels d'offres)
+
+export type TenderStatus = 'NEW' | 'REVIEWING' | 'BIDDING' | 'SUBMITTED' | 'WON' | 'LOST' | 'IGNORED'
+
+export const TENDER_STATUSES: readonly TenderStatus[] = ['NEW', 'REVIEWING', 'BIDDING', 'SUBMITTED', 'WON', 'LOST', 'IGNORED']
+
+export type TenderSource = 'CANADABUYS' | 'SEAO'
+
+export const TENDER_SOURCES: readonly TenderSource[] = ['CANADABUYS', 'SEAO']
+
+export interface TenderDTO {
+  id: string
+  source: TenderSource
+  externalId: string
+  title: string
+  buyer: string
+  region: string | null
+  category: string | null
+  publishedAt: string | null
+  closingAt: string | null
+  url: string
+  estimatedValue: number | null
+  matchedKeywords: string[]
+  status: TenderStatus
+  notes: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type TenderSortField = 'closingAt' | 'publishedAt' | 'createdAt'
+
+export interface TenderListParams {
+  page?: number
+  size?: number
+  status?: TenderStatus
+  source?: TenderSource
+  q?: string
+  /** closingAt >= now */
+  openOnly?: boolean
+  sortBy?: TenderSortField
+  sortDirection?: SortDirection
+}
+
+export interface TenderUpdateRequest {
+  status?: TenderStatus
+  notes?: string | null
+}
+
+export interface TenderSummary {
+  open: number
+  closingThisWeek: number
+  bidding: number
+  submitted: number
+  won: number
 }

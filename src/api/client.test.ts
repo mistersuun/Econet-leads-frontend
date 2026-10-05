@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { API_URL, ApiError, apiFetch, buildQuery } from './client'
+import { API_URL, ApiError, apiFetch, apiUpload, buildQuery, setUploadTransport, type UploadRequest, type UploadResult } from './client'
 import { getSession, resetSessionCache, setSession } from './session'
 
 const json = (status: number, body: unknown) =>
@@ -111,5 +111,48 @@ describe('buildQuery', () => {
   it('skips empty values and repeats arrays', () => {
     expect(buildQuery({ a: 1, b: '', c: undefined, d: null, s: ['NEW', 'WON'], t: true })).toBe('?a=1&s=NEW&s=WON&t=true')
     expect(buildQuery({})).toBe('')
+  })
+})
+
+describe('apiUpload', () => {
+  const fetchMock = vi.fn<typeof fetch>()
+  const transport = vi.fn<(req: UploadRequest) => Promise<UploadResult>>()
+
+  beforeEach(() => {
+    localStorage.clear()
+    resetSessionCache()
+    setSession({ accessToken: 'access-1', refreshToken: 'refresh-1', user })
+    fetchMock.mockReset()
+    transport.mockReset()
+    vi.stubGlobal('fetch', fetchMock)
+    setUploadTransport(transport)
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('sends the bearer token, reports progress and parses the JSON body', async () => {
+    transport.mockImplementationOnce(async (req) => {
+      req.onProgress?.({ loaded: 50, total: 100 })
+      return { status: 202, text: JSON.stringify({ id: 'job-1' }) }
+    })
+    const progress = vi.fn()
+    await expect(apiUpload('/api/data-sources/s1/upload', new FormData(), { onProgress: progress })).resolves.toEqual({ id: 'job-1' })
+    expect(transport.mock.calls[0][0].url).toBe(`${API_URL}/api/data-sources/s1/upload`)
+    expect(transport.mock.calls[0][0].headers.Authorization).toBe('Bearer access-1')
+    expect(progress).toHaveBeenCalledWith({ loaded: 50, total: 100 })
+  })
+
+  it('refreshes once on 401 and retries the upload', async () => {
+    transport.mockResolvedValueOnce({ status: 401, text: '' }).mockResolvedValueOnce({ status: 202, text: '{"id":"job-2"}' })
+    fetchMock.mockResolvedValueOnce(json(200, authBody(2)))
+    await expect(apiUpload('/api/up', new FormData())).resolves.toEqual({ id: 'job-2' })
+    expect(transport.mock.calls[1][0].headers.Authorization).toBe('Bearer access-2')
+  })
+
+  it('throws the server {error} message', async () => {
+    transport.mockResolvedValueOnce({ status: 400, text: JSON.stringify({ error: 'Fichier ZIP attendu' }) })
+    const err = await apiUpload('/api/up', new FormData()).catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(ApiError)
+    expect((err as ApiError).message).toBe('Fichier ZIP attendu')
+    expect((err as ApiError).status).toBe(400)
   })
 })

@@ -4,7 +4,7 @@ import { outcomeColor, outcomeLabel } from '../lib/status'
 import { IconCalendarClock, IconUser } from './icons'
 import './call-history.css'
 
-const TYPE_LABEL: Record<string, string> = { APPEL: 'Appel', EMAIL: 'Courriel', VISITE: 'Visite' }
+const TYPE_LABEL: Record<string, string> = { APPEL: 'Appel', EMAIL: 'Courriel', VISITE: 'Visite', NOTE: 'Note' }
 
 export function CallHistory({ contacts, compact }: { contacts: ContactDTO[]; compact?: boolean }) {
   return (
