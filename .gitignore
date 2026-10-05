@@ -137,3 +137,7 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Vite env files committed on purpose (no secrets)
+!.env.development
+!.env.mock
