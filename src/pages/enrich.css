@@ -1,0 +1,139 @@
+.enrich-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.enrich-focus {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.enrich-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.enrich-address {
+  font-size: var(--text-md);
+  color: var(--ink-2);
+}
+.enrich-address:hover {
+  color: var(--green);
+}
+
+/* The working area: search, type, save. Same soft fill as the phone tile slot. */
+.enrich-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 16px;
+  background: var(--fill);
+}
+.enrich-search {
+  align-self: flex-start;
+}
+.enrich-phone {
+  height: 56px;
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  padding: 0 16px;
+}
+.enrich-phone::placeholder {
+  font-weight: 400;
+  color: #b0b0b5;
+}
+.enrich-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.btn .kbd {
+  margin-left: 4px;
+}
+.btn-primary .kbd {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.85);
+}
+.enrich-dnc {
+  color: var(--muted);
+}
+.enrich-dnc:hover:not(:disabled) {
+  color: var(--danger);
+}
+
+.enrich-next {
+  overflow: hidden;
+}
+.enrich-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 8px;
+  border-top: 1px solid var(--hairline);
+}
+.enrich-list li + li {
+  border-top: 1px solid var(--hairline);
+}
+.enrich-list button {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 24px;
+  cursor: pointer;
+  min-width: 0;
+}
+.enrich-list button:hover {
+  background: #fafafb;
+}
+.enrich-list button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+@media (max-width: 1080px) {
+  .enrich-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .enrich-page .page-header {
+    margin-bottom: 16px;
+    gap: 8px;
+    align-items: baseline;
+  }
+  .enrich-page .page-header .subtitle {
+    display: none;
+  }
+  .enrich-page .card-pad {
+    padding: 20px 16px;
+  }
+  .enrich-page .lead-card-name {
+    font-size: var(--text-xl);
+  }
+  .enrich-entry {
+    padding: 16px;
+  }
+  .enrich-search {
+    align-self: stretch;
+  }
+  .enrich-actions .btn-primary {
+    flex: 1 1 100%;
+  }
+  .enrich-actions .spacer {
+    display: none;
+  }
+  .enrich-actions .btn:not(.btn-primary) {
+    flex: 1 1 0;
+  }
+  .enrich-list button {
+    padding: 12px 16px;
+  }
+}

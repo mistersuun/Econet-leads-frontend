@@ -16,6 +16,9 @@ const LeadsPage = lazy(() => import('./pages/LeadsPage'))
 const LeadDetailDrawer = lazy(() => import('./pages/LeadDetailDrawer'))
 const FollowUpsPage = lazy(() => import('./pages/FollowUpsPage'))
 const SourcesPage = lazy(() => import('./pages/SourcesPage'))
+const EnrichPage = lazy(() => import('./pages/EnrichPage'))
+const TendersPage = lazy(() => import('./pages/TendersPage'))
+const TenderDetailDrawer = lazy(() => import('./pages/TenderDetailDrawer'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,7 +61,11 @@ export default function App() {
                 <Route path="leads" element={<LeadsPage />}>
                   <Route path=":id" element={<LeadDetailDrawer />} />
                 </Route>
+                <Route path="enrich" element={<EnrichPage />} />
                 <Route path="follow-ups" element={<FollowUpsPage />} />
+                <Route path="tenders" element={<TendersPage />}>
+                  <Route path=":id" element={<TenderDetailDrawer />} />
+                </Route>
                 <Route
                   path="sources"
                   element={

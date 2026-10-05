@@ -1,0 +1,86 @@
+.tenders-card {
+  overflow: hidden;
+}
+.tenders-table tbody tr.selected td {
+  background: var(--mint);
+}
+.tender-main {
+  min-width: 280px;
+}
+.tender-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 520px;
+}
+.tender-meta {
+  margin-top: 4px;
+}
+.tender-meta .status-dot {
+  font-size: var(--text-xs);
+  gap: 6px;
+}
+.tenders-table td.tender-region {
+  max-width: 160px;
+}
+.tender-keywords {
+  max-width: 200px;
+}
+.closing {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.closing .text-danger {
+  font-weight: 500;
+}
+.tender-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .tender-main {
+    min-width: 0;
+  }
+}
+
+/* Detail drawer */
+.tender-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tender-head h2 {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.tender-buyer {
+  font-size: var(--text-base);
+  color: var(--muted);
+}
+.tender-closing {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--hairline);
+}
+.tender-closing strong {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.notes-status {
+  font-size: var(--text-xs);
+  color: var(--muted);
+  min-height: 16px;
+}

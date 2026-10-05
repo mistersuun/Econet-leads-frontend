@@ -46,22 +46,6 @@
   flex: 1;
   min-width: 0;
 }
-.outcome-btn kbd,
-.submit-hint kbd {
-  display: inline-grid;
-  place-items: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
-  font: 500 var(--text-xs) / 1 var(--font);
-  font-variant-numeric: tabular-nums;
-  color: var(--muted);
-  background: var(--surface);
-  border: 1px solid var(--hairline-strong);
-  border-bottom-width: 2px;
-  border-radius: var(--r-xs);
-  flex: none;
-}
 .outcome-btn:hover {
   background: #fafafa;
   border-color: var(--control-border);

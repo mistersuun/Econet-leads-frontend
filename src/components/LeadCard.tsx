@@ -1,5 +1,7 @@
 import type { BusinessDTO } from '../api/types'
 import { formatPhone, formatRelative, telHref, toDate } from '../lib/format'
+import { AddPhone } from './AddPhone'
+import { SourceDetails } from './SourceDetails'
 import { StatusBadge } from './StatusBadge'
 import { IconClock, IconPhone } from './icons'
 import './lead-card.css'
@@ -60,7 +62,7 @@ export function LeadCard({ lead }: { lead: BusinessDTO }) {
           </span>
         </a>
       ) : (
-        <div className="note warn">Aucun numéro de téléphone</div>
+        <AddPhone key={lead.id} lead={lead} />
       )}
       <dl className="lead-facts">
         {address && (
@@ -113,6 +115,7 @@ export function LeadCard({ lead }: { lead: BusinessDTO }) {
           </dd>
         </div>
       </dl>
+      <SourceDetails lead={lead} />
     </div>
   )
 }

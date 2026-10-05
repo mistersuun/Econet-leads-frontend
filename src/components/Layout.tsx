@@ -9,14 +9,30 @@ import {
   IconCalendarClock,
   IconDashboard,
   IconDatabase,
+  IconFileText,
   IconLeaf,
   IconLogOut,
   IconMore,
   IconPhone,
+  IconPhonePlus,
   IconUsers,
 } from './icons'
 
 const MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
+
+interface NavItem {
+  to: string
+  label: string
+  short: string
+  icon: typeof IconDashboard
+  end?: boolean
+  /** Needs attention: red count. */
+  badge?: number
+  /** Plain muted count. */
+  count?: number
+  /** Shown in the mobile tab bar (otherwise under "Plus"). */
+  tab?: boolean
+}
 
 export function Layout() {
   const { user, logout, hasRole } = useAuth()
@@ -24,14 +40,19 @@ export function Layout() {
   const location = useLocation()
   const summary = useQuery({ queryKey: ['summary', 'nav'], queryFn: () => getSummary(), staleTime: 60_000 })
   const overdue = (summary.data?.followUpsOverdue ?? 0) + (summary.data?.followUpsDue ?? 0)
+  const toEnrich = summary.data?.toEnrich ?? 0
 
-  const items = [
-    { to: '/', label: 'Tableau de bord', short: 'Tableau', icon: IconDashboard, end: true },
-    { to: '/call', label: 'Appeler', short: 'Appeler', icon: IconPhone },
-    { to: '/leads', label: 'Leads', short: 'Leads', icon: IconUsers },
-    { to: '/follow-ups', label: 'Suivis', short: 'Suivis', icon: IconCalendarClock, badge: overdue },
+  const items: NavItem[] = [
+    { to: '/', label: 'Tableau de bord', short: 'Tableau', icon: IconDashboard, end: true, tab: true },
+    { to: '/call', label: 'Appeler', short: 'Appeler', icon: IconPhone, tab: true },
+    { to: '/enrich', label: 'À enrichir', short: 'Enrichir', icon: IconPhonePlus, count: toEnrich },
+    { to: '/leads', label: 'Leads', short: 'Leads', icon: IconUsers, tab: true },
+    { to: '/follow-ups', label: 'Suivis', short: 'Suivis', icon: IconCalendarClock, badge: overdue, tab: true },
+    { to: '/tenders', label: 'Appels d’offres', short: 'Offres', icon: IconFileText },
     ...(hasRole('ADMIN') ? [{ to: '/sources', label: 'Sources', short: 'Sources', icon: IconDatabase }] : []),
   ]
+  const tabs = items.filter((it) => it.tab)
+  const more = items.filter((it) => !it.tab)
   const initials = (user?.username ?? '?')
     .split(/[.\s_-]/)
     .map((p) => p[0])
@@ -57,6 +78,7 @@ export function Layout() {
               <it.icon size={18} />
               {it.label}
               {!!it.badge && <span className="nav-badge" aria-label={`${it.badge} suivis à faire`}>{it.badge}</span>}
+              {!!it.count && <span className="nav-count" aria-label={`${it.count} leads sans téléphone`}>{it.count}</span>}
             </NavLink>
           ))}
         </nav>
@@ -92,14 +114,20 @@ export function Layout() {
           </Suspense>
         </main>
         <nav className="tabbar" aria-label="Navigation">
-          {items.slice(0, 4).map((it) => (
+          {tabs.map((it) => (
             <NavLink key={it.to} to={it.to} end={it.end}>
               <it.icon size={22} />
               {it.short}
               {!!it.badge && <span className="tab-dot">{it.badge}</span>}
             </NavLink>
           ))}
-          <button type="button" onClick={() => setSheetOpen(true)} aria-haspopup="dialog" aria-expanded={sheetOpen}>
+          <button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={sheetOpen}
+            className={more.some((it) => location.pathname.startsWith(it.to)) ? 'active' : undefined}
+          >
             <IconMore size={22} />
             Plus
           </button>
@@ -108,11 +136,12 @@ export function Layout() {
 
       {sheetOpen && (
         <MoreSheet key={location.pathname} onClose={() => setSheetOpen(false)}>
-          {hasRole('ADMIN') && (
-            <NavLink to="/sources" onClick={() => setSheetOpen(false)}>
-              <IconDatabase size={20} /> Sources de données
+          {more.map((it) => (
+            <NavLink key={it.to} to={it.to} onClick={() => setSheetOpen(false)}>
+              <it.icon size={20} /> {it.to === '/sources' ? 'Sources de données' : it.label}
+              {!!it.count && <span className="sheet-count num">{it.count}</span>}
             </NavLink>
-          )}
+          ))}
           <div style={{ padding: '16px 8px', borderBottom: '1px solid var(--hairline)' }} className="small muted">
             Connecté : <strong style={{ color: 'var(--ink)' }}>{user?.username}</strong> · {user ? ROLE_LABEL[user.role] : ''}
           </div>
