@@ -39,12 +39,21 @@ Requires Node 20+.
 ```bash
 npm install
 cp .env.example .env.local   # optional, see below
-npm run dev                  # http://localhost:5173 — needs the backend on :8080
+npm run dev                  # http://localhost:5173 — needs the backend on :8081 (its `local` profile)
 npm run dev:mock             # http://localhost:5173 — no backend needed (demo data)
 ```
 
 The dev server is pinned to port **5173** because the backend's default CORS config
 allows `http://localhost:5173`.
+
+### Running against the real backend locally
+
+1. Start PostgreSQL and the backend with the `local` profile (see the backend README):
+   `./mvnw spring-boot:run -Dspring-boot.run.profiles=local` → `http://localhost:8081`.
+   That profile seeds ~60 demo leads (`dataSource = DEMO`) with 30 days of calls.
+2. `npm run dev` (uses `.env.development` → `VITE_API_URL=http://localhost:8081`).
+3. Log in as `admin` / `admin123` (local only), or `demo.agent1` / `demo1234` (caller),
+   `demo.viewer` / `demo1234` (read-only).
 
 ### Environment variables
 
