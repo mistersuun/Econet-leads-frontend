@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatCurrency, formatPercent, formatPhone, formatRelative, telHref, toApiDateTime } from './format'
+import { formatBytes, formatCurrency, formatPercent, formatPhone, formatRelative, telHref, toApiDateTime } from './format'
 import { defaultFollowUp, previousRange } from './dates'
 
 const norm = (s: string) => s.replace(/\u00a0/g, ' ')
@@ -62,5 +62,15 @@ describe('dates', () => {
     expect(toApiDateTime(defaultFollowUp('NO_ANSWER', friday)!)).toBe('2026-10-06T10:00:00') // +2 business days
     expect(toApiDateTime(defaultFollowUp('INTERESTED', friday)!)).toBe('2026-10-05T10:00:00') // +3 days
     expect(defaultFollowUp('WON', friday)).toBeNull()
+  })
+})
+
+describe('formatBytes', () => {
+  it('uses French binary units', () => {
+    expect(norm(formatBytes(512))).toBe('512 o')
+    expect(norm(formatBytes(1536))).toBe('1,5 Ko')
+    expect(norm(formatBytes(225 * 1024 * 1024))).toBe('225 Mo')
+    expect(norm(formatBytes(48.3 * 1024 * 1024))).toBe('48,3 Mo')
+    expect(formatBytes(null)).toBe('—')
   })
 })

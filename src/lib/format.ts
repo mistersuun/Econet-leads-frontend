@@ -96,3 +96,17 @@ export function toInputDateTime(value: string | Date | null | undefined): string
   const d = toDate(value)
   return d ? format(d, "yyyy-MM-dd'T'HH:mm") : ''
 }
+
+/** 235_000_000 → "224,1 Mo" (binary units, French abbreviations). */
+export function formatBytes(bytes: number | null | undefined): string {
+  if (bytes === null || bytes === undefined || !Number.isFinite(bytes)) return '—'
+  const units = ['o', 'Ko', 'Mo', 'Go']
+  let v = Math.max(0, bytes)
+  let i = 0
+  while (v >= 1024 && i < units.length - 1) {
+    v /= 1024
+    i++
+  }
+  const digits = i === 0 || v >= 100 ? 0 : 1
+  return nbsp(`${new Intl.NumberFormat('fr-CA', { maximumFractionDigits: digits }).format(v)} ${units[i]}`)
+}

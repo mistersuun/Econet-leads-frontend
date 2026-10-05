@@ -50,3 +50,48 @@
     opacity: 0.35;
   }
 }
+
+.source-actions {
+  display: inline-flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.table tr.has-upload td {
+  border-bottom: 0;
+}
+.upload-row td {
+  padding-top: 0;
+}
+.upload-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: var(--r-control);
+  background: var(--fill);
+}
+.upload-progress-text {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.upload-progress-text > .truncate {
+  flex: 1;
+  min-width: 0;
+}
+.upload-progress-text strong {
+  font-weight: 500;
+}
+.upload-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--fill-strong);
+  overflow: hidden;
+}
+.upload-bar span {
+  display: block;
+  height: 100%;
+  background: var(--green-strong);
+  transition: width 0.15s linear;
+}

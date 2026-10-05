@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   getJobStatistics,
@@ -7,13 +7,14 @@ import {
   listJobs,
   listRunningJobs,
   setDataSourceActive,
+  uploadDataSourceFile,
 } from '../api/endpoints'
 import { jobSourceId, jobSourceName, type DataSource, type JobStatus, type ScraperJobDTO } from '../api/types'
 import { EmptyState, ErrorState, Skeleton, SkeletonRows } from '../components/States'
 import { useToast } from '../components/Toast'
-import { IconPlay, IconRefresh } from '../components/icons'
+import { IconPlay, IconRefresh, IconUpload, IconX } from '../components/icons'
 import { errorMessage } from '../lib/errors'
-import { formatDateTime, formatNumber, formatRelative } from '../lib/format'
+import { formatBytes, formatDateTime, formatNumber, formatPercent, formatRelative } from '../lib/format'
 import './sources.css'
 
 const JOB_STATUS: Record<JobStatus, { label: string; color: string }> = {
@@ -23,7 +24,21 @@ const JOB_STATUS: Record<JobStatus, { label: string; color: string }> = {
   FAILED: { label: 'Échec', color: '#c4613f' },
   CANCELLED: { label: 'Annulé', color: '#48484a' },
 }
-const SOURCE_TYPE: Record<string, string> = { CKAN_API: 'API CKAN', WEB_SCRAPER: 'Scraper web', CSV_DOWNLOAD: 'Fichier CSV', MANUAL: 'Manuel' }
+const SOURCE_TYPE: Record<string, string> = {
+  CKAN_API: 'API CKAN',
+  WEB_SCRAPER: 'Scraper web',
+  CSV_DOWNLOAD: 'Fichier CSV',
+  BULK_FILE: 'Fichier ZIP',
+  MANUAL: 'Manuel',
+}
+
+interface UploadState {
+  sourceId: string
+  fileName: string
+  loaded: number
+  total: number
+  controller: AbortController
+}
 const FREQ: Record<string, string> = { DAILY: 'Quotidienne', WEEKLY: 'Hebdomadaire', MONTHLY: 'Mensuelle', MANUAL: 'Manuelle' }
 
 function JobBadge({ status }: { status: JobStatus }) {
@@ -79,6 +94,45 @@ export default function SourcesPage() {
     },
     onError: (e) => toast(errorMessage(e), 'error'),
   })
+  // Business register: send the official ZIP (~225 MB) with a progress bar, then the server imports it.
+  const fileInput = useRef<HTMLInputElement>(null)
+  const uploadTarget = useRef<DataSource | null>(null)
+  const [upload, setUpload] = useState<UploadState | null>(null)
+  useEffect(() => {
+    if (!upload) return
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault()
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [upload])
+  useEffect(() => () => upload?.controller.abort(), [upload?.controller])
+
+  const pickFile = (s: DataSource) => {
+    uploadTarget.current = s
+    fileInput.current?.click()
+  }
+  const startUpload = async (s: DataSource, file: File) => {
+    if (!/\.zip$/i.test(file.name)) {
+      toast('Choisissez le fichier ZIP du registre des entreprises (.zip).', 'error')
+      return
+    }
+    const controller = new AbortController()
+    setUpload({ sourceId: s.id, fileName: file.name, loaded: 0, total: file.size, controller })
+    try {
+      const job = await uploadDataSourceFile(s.id, file, {
+        signal: controller.signal,
+        onProgress: (p) => setUpload((u) => (u && u.controller === controller ? { ...u, loaded: p.loaded, total: p.total } : u)),
+      })
+      toast(`Fichier reçu — importation lancée : ${s.sourceName}`)
+      qc.setQueryData<ScraperJobDTO[]>(['jobs-running'], (old) => [...(old ?? []), job])
+      for (const k of ['jobs-running', 'jobs', 'job-stats']) void qc.invalidateQueries({ queryKey: [k] })
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') toast('Envoi annulé', 'info')
+      else toast(errorMessage(e), 'error')
+    } finally {
+      setUpload((u) => (u?.controller === controller ? null : u))
+    }
+  }
+
   const [toggling, setToggling] = useState<string | null>(null)
   const activeMut = useMutation({
     mutationFn: (s: DataSource) => setDataSourceActive(s.id, !s.active),
@@ -133,6 +187,19 @@ export default function SourcesPage() {
         ))}
       </div>
 
+      <input
+        ref={fileInput}
+        type="file"
+        accept=".zip,application/zip,application/x-zip-compressed"
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          const target = uploadTarget.current
+          e.target.value = ''
+          if (file && target) void startUpload(target, file)
+        }}
+      />
+
       <section className="card" style={{ marginTop: 16 }}>
         <header className="widget-head" style={{ paddingBottom: 12 }}>
           <h2>Sources</h2>
@@ -165,47 +232,94 @@ export default function SourcesPage() {
               <tbody>
                 {sources.data.map((s) => {
                   const isRunning = runningIds.has(s.id)
+                  const isBulk = s.sourceType === 'BULK_FILE'
+                  const up = upload?.sourceId === s.id ? upload : null
                   return (
-                    <tr key={s.id}>
-                      <td>
-                        <div className="lead-name">{s.sourceName}</div>
-                        {s.sourceUrl && (
-                          <a href={s.sourceUrl} target="_blank" rel="noreferrer" className="xs source-url">
-                            {s.sourceUrl.replace(/^https?:\/\//, '')}
-                          </a>
-                        )}
-                      </td>
-                      <td className="hide-sm nowrap">{SOURCE_TYPE[s.sourceType] ?? s.sourceType}</td>
-                      <td className="hide-md">{s.syncFrequency ? FREQ[s.syncFrequency] ?? s.syncFrequency : '—'}</td>
-                      <td className="nowrap" title={formatDateTime(s.lastSync)}>
-                        {s.lastSync ? formatRelative(s.lastSync) : <span className="muted">Jamais</span>}
-                      </td>
-                      <td className="num hide-sm">{formatNumber(s.recordsCount ?? 0)}</td>
-                      <td>
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={s.active}
-                          aria-label={`${s.active ? 'Désactiver' : 'Activer'} ${s.sourceName}`}
-                          className="switch"
-                          disabled={toggling === s.id}
-                          onClick={() => activeMut.mutate(s)}
-                        >
-                          <span />
-                        </button>
-                      </td>
-                      <td className="num">
-                        <button
-                          type="button"
-                          className="btn btn-sm"
-                          disabled={!s.active || isRunning || (importMut.isPending && importMut.variables?.id === s.id)}
-                          onClick={() => importMut.mutate(s)}
-                          title={!s.active ? 'Activez la source pour importer' : undefined}
-                        >
-                          <IconPlay size={14} /> {isRunning ? 'En cours…' : 'Importer'}
-                        </button>
-                      </td>
-                    </tr>
+                    <Fragment key={s.id}>
+                      <tr className={up ? 'has-upload' : undefined}>
+                        <td>
+                          <div className="lead-name">{s.sourceName}</div>
+                          {s.sourceUrl && (
+                            <a href={s.sourceUrl} target="_blank" rel="noreferrer" className="xs source-url">
+                              {s.sourceUrl.replace(/^https?:\/\//, '')}
+                            </a>
+                          )}
+                        </td>
+                        <td className="hide-sm nowrap">{SOURCE_TYPE[s.sourceType] ?? s.sourceType}</td>
+                        <td className="hide-md">{s.syncFrequency ? FREQ[s.syncFrequency] ?? s.syncFrequency : '—'}</td>
+                        <td className="nowrap" title={formatDateTime(s.lastSync)}>
+                          {s.lastSync ? formatRelative(s.lastSync) : <span className="muted">Jamais</span>}
+                        </td>
+                        <td className="num hide-sm">{formatNumber(s.recordsCount ?? 0)}</td>
+                        <td>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={s.active}
+                            aria-label={`${s.active ? 'Désactiver' : 'Activer'} ${s.sourceName}`}
+                            className="switch"
+                            disabled={toggling === s.id}
+                            onClick={() => activeMut.mutate(s)}
+                          >
+                            <span />
+                          </button>
+                        </td>
+                        <td className="num">
+                          <div className="source-actions">
+                            {isBulk && (
+                              <button
+                                type="button"
+                                className="btn btn-sm"
+                                disabled={!s.active || isRunning || !!upload}
+                                onClick={() => pickFile(s)}
+                                title={!s.active ? 'Activez la source pour importer' : 'Envoyer le ZIP officiel du registre (≈ 225 Mo)'}
+                              >
+                                <IconUpload size={14} /> <span className="hide-sm">Importer un fichier</span>
+                                <span className="show-sm">Fichier</span>
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className="btn btn-sm"
+                              disabled={!s.active || isRunning || !!up || (importMut.isPending && importMut.variables?.id === s.id)}
+                              onClick={() => importMut.mutate(s)}
+                              title={!s.active ? 'Activez la source pour importer' : isBulk ? 'Télécharger depuis l’URL configurée' : undefined}
+                            >
+                              <IconPlay size={14} /> {isRunning ? 'En cours…' : 'Importer'}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      {up && (
+                        <tr className="upload-row">
+                          <td colSpan={7}>
+                            <div className="upload-progress" role="status" aria-live="polite">
+                              <div className="upload-progress-text small">
+                                <span className="truncate">
+                                  Envoi de <strong>{up.fileName}</strong>
+                                </span>
+                                <span className="num muted nowrap">
+                                  {formatBytes(up.loaded)} sur {formatBytes(up.total)} · {formatPercent(up.total ? up.loaded / up.total : 0, 0)}
+                                </span>
+                                <button type="button" className="btn btn-ghost btn-sm" onClick={() => up.controller.abort()}>
+                                  <IconX size={14} /> Annuler
+                                </button>
+                              </div>
+                              <div
+                                className="upload-bar"
+                                role="progressbar"
+                                aria-label={`Envoi de ${up.fileName}`}
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                                aria-valuenow={Math.round(up.total ? (up.loaded / up.total) * 100 : 0)}
+                              >
+                                <span style={{ width: `${up.total ? (up.loaded / up.total) * 100 : 0}%` }} />
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   )
                 })}
               </tbody>
