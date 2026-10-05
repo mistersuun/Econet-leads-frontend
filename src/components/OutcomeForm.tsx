@@ -118,8 +118,9 @@ export function OutcomeForm({ lead, disabled, shortcuts, submitLabel = 'Enregist
               onClick={() => choose(o)}
               style={{ ['--oc' as string]: m.color }}
             >
+              <span className="outcome-dot" aria-hidden="true" />
+              <span className="outcome-label">{m.label}</span>
               {shortcuts && <kbd aria-hidden="true">{i + 1}</kbd>}
-              <span>{m.label}</span>
             </button>
           )
         })}
@@ -200,7 +201,12 @@ export function OutcomeForm({ lead, disabled, shortcuts, submitLabel = 'Enregist
       <div className="outcome-actions">
         {extraActions}
         <span className="spacer" />
-        {shortcuts && <span className="xs muted hide-mobile">⌘/Ctrl + Entrée</span>}
+        {shortcuts && (
+          <span className="submit-hint hide-mobile" aria-hidden="true">
+            <kbd>⌘/Ctrl</kbd>
+            <kbd>Entrée</kbd>
+          </span>
+        )}
         <button type="submit" className="btn btn-primary btn-lg" disabled={!outcome || disabled || mutation.isPending}>
           {mutation.isPending ? 'Enregistrement…' : submitLabel}
         </button>

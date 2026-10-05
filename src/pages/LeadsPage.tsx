@@ -232,7 +232,7 @@ export default function LeadsPage() {
                       <td className="hide-sm">{l.addressCity ?? '—'}</td>
                       <td className="hide-sm nowrap num">{formatPhone(l.phone)}</td>
                       <td>
-                        <StatusBadge status={l.leadStatus} />
+                        <StatusBadge status={l.leadStatus} variant="dot" />
                       </td>
                       <td className="hide-md">
                         <QualityMeter score={l.dataQualityScore} />

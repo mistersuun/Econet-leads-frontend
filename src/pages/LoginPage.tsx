@@ -55,7 +55,7 @@ export default function LoginPage() {
       <div className="login-form-wrap">
         <form className="login-form" onSubmit={onSubmit} noValidate>
           <div>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Connexion</h2>
+            <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 600, letterSpacing: '-0.022em' }}>Connexion</h2>
             <p className="muted" style={{ marginTop: 4 }}>
               Entrez vos identifiants pour continuer.
             </p>

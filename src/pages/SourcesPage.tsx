@@ -29,7 +29,7 @@ const FREQ: Record<string, string> = { DAILY: 'Quotidienne', WEEKLY: 'Hebdomadai
 function JobBadge({ status }: { status: JobStatus }) {
   const m = JOB_STATUS[status] ?? { label: status, color: '#a1a1a6' }
   return (
-    <span className="badge" style={{ background: `${m.color}1f`, borderColor: `${m.color}40` }}>
+    <span className="status-dot">
       <span className={`dot${status === 'RUNNING' || status === 'PENDING' ? ' pulse' : ''}`} style={{ background: m.color }} />
       {m.label}
     </span>
@@ -117,18 +117,18 @@ export default function SourcesPage() {
         </div>
         <span className="spacer" />
         {(running.data?.length ?? 0) > 0 && (
-          <span className="chip">
-            <span className="dot pulse" style={{ background: '#4a72b0', width: 8, height: 8, borderRadius: '50%' }} />
+          <span className="status-dot">
+            <span className="dot pulse" style={{ background: '#4a72b0' }} />
             {running.data!.length} importation{running.data!.length > 1 ? 's' : ''} en cours
           </span>
         )}
       </div>
 
-      <div className="grid stats-grid">
+      <div className="card stats-strip">
         {STATS.map((st) => (
-          <div key={st.label} className="card kpi">
+          <div key={st.label} className="stat">
             <span className="kpi-label">{st.label}</span>
-            {stats.data ? <span className="kpi-value" style={{ fontSize: '1.4rem' }}>{formatNumber(st.value(stats.data))}</span> : stats.isError ? <span className="muted">—</span> : <Skeleton height={26} width="50%" />}
+            {stats.data ? <span className="stat-value">{formatNumber(st.value(stats.data))}</span> : stats.isError ? <span className="muted">—</span> : <Skeleton height={28} width="50%" />}
           </div>
         ))}
       </div>

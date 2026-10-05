@@ -1,124 +1,148 @@
+/* Contact card: identity, one big tappable number, then a quiet definition list. */
 .lead-card {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 24px;
+}
+.lead-card-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lead-card-tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 4px;
 }
 .lead-card-name {
-  font-size: 1.6rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
+  font-size: var(--text-3xl);
+  font-weight: 600;
+  letter-spacing: -0.028em;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
 }
 .lead-card-type {
-  margin-top: 4px;
-  font-size: 0.92rem;
+  font-size: var(--text-base);
+  color: var(--muted);
 }
+
 .phone-cta {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 18px;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 72px;
+  padding: 12px 12px 12px 20px;
   border-radius: 16px;
-  background: var(--deep);
-  color: #fff;
+  background: var(--mint);
+  color: var(--deep);
   text-decoration: none;
   transition: background 0.12s;
 }
 .phone-cta:hover {
-  background: #2a4b3f;
+  background: var(--mint-strong);
   text-decoration: none;
 }
+.phone-cta:active .phone-cta-icon {
+  transform: scale(0.96);
+}
 .phone-cta:focus-visible {
-  outline: 3px solid var(--sage);
+  outline: 2px solid var(--focus);
   outline-offset: 3px;
+  border-radius: 16px;
+}
+.phone-cta-number {
+  font-size: var(--text-3xl);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 .phone-cta-icon {
-  width: 46px;
-  height: 46px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--deep);
+  color: #fff;
   display: grid;
   place-items: center;
   flex: none;
+  transition: transform 0.08s;
 }
-.phone-cta-number {
-  display: block;
-  font-size: 1.6rem;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-  line-height: 1.15;
-}
-.phone-cta-hint {
-  display: block;
-  font-size: 0.78rem;
-  color: #b7cec5;
-}
-.lead-meta {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 0.92rem;
-}
-.lead-meta li {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  min-width: 0;
-}
-.lead-meta li svg {
-  flex: none;
-  margin-top: 2px;
-  color: var(--muted);
-}
-.lead-meta a {
-  color: var(--ink);
-  overflow-wrap: anywhere;
-}
+
 .lead-facts {
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--hairline);
+}
+.lead-facts > div {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  padding-top: 14px;
-  border-top: 1px solid var(--border);
+  grid-template-columns: 128px minmax(0, 1fr);
+  gap: 16px;
+  align-items: baseline;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.lead-facts > div:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
 }
 .lead-facts dt {
-  font-size: 0.74rem;
+  font-size: var(--text-sm);
   color: var(--muted);
-  font-weight: 500;
-  margin-bottom: 3px;
 }
 .lead-facts dd {
   margin: 0;
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: var(--text-md);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
+.lead-facts a {
+  color: var(--ink);
+}
+.lead-facts a:hover {
+  color: var(--green);
+}
+
 @media (max-width: 560px) {
-  .lead-facts {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .lead-card {
+    gap: 20px;
   }
   .lead-card-name {
-    font-size: 1.35rem;
+    font-size: var(--text-xl);
+    letter-spacing: -0.02em;
+  }
+  .phone-cta {
+    min-height: 64px;
+    padding-left: 16px;
+  }
+  .phone-cta-number {
+    font-size: 26px;
+  }
+  .lead-facts > div {
+    grid-template-columns: 104px minmax(0, 1fr);
+    gap: 12px;
   }
 }
+
 .quality {
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 .quality-track {
-  width: 44px;
-  height: 6px;
-  background: #ececf0;
-  border-radius: 3px;
+  width: 48px;
+  height: 4px;
+  background: var(--fill-strong);
+  border-radius: 2px;
   overflow: hidden;
   display: inline-block;
 }
 .quality-track span {
   display: block;
   height: 100%;
-  border-radius: 3px;
+  border-radius: 2px;
 }

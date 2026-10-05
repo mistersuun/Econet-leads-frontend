@@ -1,9 +1,10 @@
 .filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  padding: 14px;
+  gap: 8px;
+  padding: 12px;
   margin-bottom: 16px;
+  border-radius: var(--r-card);
   align-items: center;
 }
 .filters .select,
@@ -27,6 +28,7 @@
 .select.has-value {
   border-color: var(--sage);
   background-color: var(--mint);
+  color: var(--deep);
 }
 .multiselect {
   position: relative;
@@ -45,15 +47,14 @@
   left: 0;
   min-width: 220px;
   background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
+  border-radius: var(--r-control);
+  box-shadow: var(--float);
   padding: 8px;
   display: flex;
   flex-direction: column;
 }
 .multiselect-opt {
-  padding: 7px 8px;
+  padding: 8px;
   border-radius: 8px;
 }
 .multiselect-opt:hover {
@@ -73,7 +74,7 @@
 @media (max-width: 640px) {
   .filters .select,
   .filters .multiselect {
-    flex: 1 1 calc(50% - 5px);
+    flex: 1 1 calc(50% - 4px);
     max-width: none;
     min-width: 0;
   }

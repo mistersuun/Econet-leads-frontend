@@ -176,7 +176,7 @@ export default function LeadDetailDrawer() {
         <header className="drawer-head">
           <div style={{ minWidth: 0, flex: 1 }}>
             <div className="xs muted">Fiche lead</div>
-            <h2 id="lead-drawer-title" className="truncate" style={{ fontSize: '1.15rem' }}>
+            <h2 id="lead-drawer-title" className="truncate" style={{ fontSize: 'var(--text-lg)' }}>
               {lead.data?.businessName ?? 'Chargement…'}
             </h2>
           </div>
@@ -197,7 +197,7 @@ export default function LeadDetailDrawer() {
             <div className="stack">
               <section className="card card-pad">
                 <LeadCard lead={lead.data} />
-                <div className="row" style={{ marginTop: 16 }}>
+                <div className="row" style={{ marginTop: 24 }}>
                   {!calling ? (
                     <button type="button" className="btn btn-primary" onClick={() => setCalling(true)} disabled={!canEdit} title={canEdit ? undefined : 'Lecture seule'}>
                       <IconPhone size={17} /> Appeler maintenant
@@ -210,7 +210,7 @@ export default function LeadDetailDrawer() {
 
               {calling && (
                 <section className="card card-pad" aria-label="Enregistrer un appel">
-                  <h3 style={{ marginBottom: 14 }}>Enregistrer l’appel</h3>
+                  <h3 style={{ marginBottom: 16 }}>Enregistrer l’appel</h3>
                   <OutcomeForm
                     key={lead.data.id}
                     lead={lead.data}
@@ -231,7 +231,7 @@ export default function LeadDetailDrawer() {
               </section>
 
               <section className="card card-pad">
-                <h3 style={{ marginBottom: 14 }}>Historique</h3>
+                <h3 style={{ marginBottom: 16 }}>Historique</h3>
                 {contacts.isPending ? (
                   <SkeletonRows rows={4} />
                 ) : contacts.isError ? (
@@ -244,7 +244,7 @@ export default function LeadDetailDrawer() {
               </section>
 
               <section className="card card-pad">
-                <h3 style={{ marginBottom: 12 }}>Informations</h3>
+                <h3 style={{ marginBottom: 16 }}>Informations</h3>
                 <dl className="fields">
                   {FIELDS.map((f) => (
                     <div key={f.label}>

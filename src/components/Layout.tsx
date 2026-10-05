@@ -37,13 +37,14 @@ export function Layout() {
     .map((p) => p[0])
     .join('')
     .slice(0, 2)
+    .toUpperCase()
 
   return (
     <div className="shell">
       <aside className="sidebar" aria-label="Navigation principale">
         <div className="brand">
           <span className="brand-mark">
-            <IconLeaf size={18} />
+            <IconLeaf size={16} />
           </span>
           <span>
             EcoNet Leads
@@ -53,7 +54,7 @@ export function Layout() {
         <nav className="nav">
           {items.map((it) => (
             <NavLink key={it.to} to={it.to} end={it.end}>
-              <it.icon size={19} />
+              <it.icon size={18} />
               {it.label}
               {!!it.badge && <span className="nav-badge" aria-label={`${it.badge} suivis à faire`}>{it.badge}</span>}
             </NavLink>
@@ -76,12 +77,12 @@ export function Layout() {
         <header className="topbar">
           <div className="brand">
             <span className="brand-mark">
-              <IconLeaf size={16} />
+              <IconLeaf size={15} />
             </span>
             EcoNet Leads
           </div>
           <span className="spacer" />
-          <span className="avatar" style={{ width: 30, height: 30, fontSize: '0.75rem' }} aria-label={user?.username}>
+          <span className="avatar" style={{ width: 28, height: 28 }} aria-label={user?.username}>
             {initials}
           </span>
         </header>
@@ -112,7 +113,7 @@ export function Layout() {
               <IconDatabase size={20} /> Sources de données
             </NavLink>
           )}
-          <div style={{ padding: '14px 8px', borderBottom: '1px solid var(--border)' }} className="small muted">
+          <div style={{ padding: '16px 8px', borderBottom: '1px solid var(--hairline)' }} className="small muted">
             Connecté : <strong style={{ color: 'var(--ink)' }}>{user?.username}</strong> · {user ? ROLE_LABEL[user.role] : ''}
           </div>
           <button type="button" className="sheet-item" onClick={logout}>

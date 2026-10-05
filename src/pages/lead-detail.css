@@ -1,7 +1,7 @@
 .detail-two {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 24px;
 }
 @media (max-width: 560px) {
   .detail-two {
@@ -9,26 +9,32 @@
   }
 }
 .assignee {
-  font-weight: 600;
-  font-size: 0.92rem;
-  padding: 6px 0;
+  font-weight: 500;
+  font-size: var(--text-md);
+  padding: 4px 0;
 }
 .fields {
   margin: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px 20px;
+  gap: 16px 24px;
 }
 .fields dt {
-  font-size: 0.74rem;
+  font-size: var(--text-sm);
   color: var(--muted);
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 .fields dd {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: var(--text-md);
   overflow-wrap: anywhere;
 }
 .drawer .lead-card-name {
-  font-size: 1.35rem;
+  font-size: var(--text-2xl);
+}
+.drawer .phone-cta-number {
+  font-size: var(--text-2xl);
+}
+.drawer-body > .stack {
+  gap: 12px;
 }

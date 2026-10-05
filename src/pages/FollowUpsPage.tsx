@@ -47,9 +47,9 @@ export default function FollowUpsPage() {
     const at = (l: BusinessDTO) => toDate(l.nextFollowUpAt)!
     const sort = (a: BusinessDTO, b: BusinessDTO) => at(a).getTime() - at(b).getTime()
     return [
-      { key: 'overdue', title: 'En retard', tone: 'danger', leads: all.filter((l) => at(l) < today0).sort(sort) },
-      { key: 'today', title: 'Aujourd’hui', tone: 'warn', leads: all.filter((l) => at(l) >= today0 && at(l) <= todayEnd).sort(sort) },
-      { key: 'week', title: 'Cette semaine', tone: '', leads: all.filter((l) => at(l) > todayEnd && at(l) <= weekEnd).sort(sort) },
+      { key: 'overdue', title: 'En retard', tone: '#c4613f', leads: all.filter((l) => at(l) < today0).sort(sort) },
+      { key: 'today', title: 'Aujourd’hui', tone: '#c98a1f', leads: all.filter((l) => at(l) >= today0 && at(l) <= todayEnd).sort(sort) },
+      { key: 'week', title: 'Cette semaine', tone: '#6b9080', leads: all.filter((l) => at(l) > todayEnd && at(l) <= weekEnd).sort(sort) },
     ]
   }, [due.data, upcoming.data])
 
@@ -94,8 +94,9 @@ export default function FollowUpsPage() {
           {groups.map((g) => (
             <section key={g.key} className={`card fu-group fu-${g.key}`} aria-labelledby={`fu-${g.key}`}>
               <header className="fu-head">
+                <span className="dot" style={{ background: g.tone }} aria-hidden="true" />
                 <h2 id={`fu-${g.key}`}>{g.title}</h2>
-                <span className={`chip ${g.tone}`}>{g.leads.length}</span>
+                <span className="fu-count" aria-label={`${g.leads.length} leads`}>{g.leads.length}</span>
               </header>
               {g.leads.length === 0 ? (
                 <p className="muted small fu-empty">Rien ici.</p>
@@ -111,9 +112,9 @@ export default function FollowUpsPage() {
                           {l.businessType} · {l.addressCity}
                           {l.assignedToName && ` · ${l.assignedToName}`}
                         </div>
-                        <div className="row wrap" style={{ gap: 6, marginTop: 6 }}>
-                          <StatusBadge status={l.leadStatus} />
-                          <span className={`xs fu-when ${g.key === 'overdue' ? 'text-danger' : ''}`} title={formatDate(l.nextFollowUpAt, "d MMM yyyy 'à' HH'h'mm")}>
+                        <div className="fu-meta">
+                          <StatusBadge status={l.leadStatus} variant="dot" />
+                          <span className={`fu-when ${g.key === 'overdue' ? 'text-danger' : ''}`} title={formatDate(l.nextFollowUpAt, "d MMM yyyy 'à' HH'h'mm")}>
                             {g.key === 'week' ? formatDate(l.nextFollowUpAt, "EEE d MMM, HH'h'mm") : formatRelative(l.nextFollowUpAt)}
                           </span>
                         </div>

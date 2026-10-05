@@ -28,7 +28,6 @@ import type { ActivityPoint, BreakdownDimension, DashboardSummary, DateRange } f
 import { DateRangePicker } from '../components/DateRangePicker'
 import { ErrorState, Skeleton } from '../components/States'
 import { Widget } from '../components/Widget'
-import { IconAlert, IconArrowDown, IconArrowUp } from '../components/icons'
 import { presetRange, previousRange, rangeLength, type RangePreset } from '../lib/dates'
 import { formatCurrency, formatDate, formatNumber, formatPercent } from '../lib/format'
 import { leadsHref } from '../lib/leadFilters'
@@ -86,7 +85,7 @@ export default function DashboardPage() {
         />
       </div>
 
-      <KpiRow summary={summary} prev={prevSummary.data} />
+      <Bento summary={summary} prev={prevSummary.data} range={range} />
 
       <div className="grid dash-grid" style={{ marginTop: 16 }}>
         <ActivityWidget range={range} className="span-8" />
@@ -99,18 +98,19 @@ export default function DashboardPage() {
   )
 }
 
-/* ------------------------------------------------------------------ KPIs */
+/* ----------------------------------------------------------------- Bento */
 
 type Delta = { kind: 'count' | 'points'; current: number; previous: number | undefined }
 
-function DeltaPill({ d }: { d: Delta }) {
+/** Period-over-period change as quiet text: arrow + value, green/red tone. */
+function DeltaText({ d, suffix }: { d: Delta; suffix?: string }) {
   if (d.previous === undefined) return null
   let text: string
   let dir: 'up' | 'down' | 'flat'
   if (d.kind === 'points') {
     const diff = (d.current - d.previous) * 100
     dir = Math.abs(diff) < 0.05 ? 'flat' : diff > 0 ? 'up' : 'down'
-    text = `${diff > 0 ? '+' : diff < 0 ? '−' : ''}${Math.abs(diff).toLocaleString('fr-CA', { maximumFractionDigits: 1 })} pts`
+    text = `${Math.abs(diff).toLocaleString('fr-CA', { maximumFractionDigits: 1 })} pts`
   } else {
     if (d.previous === 0) {
       dir = d.current > 0 ? 'up' : 'flat'
@@ -118,45 +118,50 @@ function DeltaPill({ d }: { d: Delta }) {
     } else {
       const pct = (d.current - d.previous) / d.previous
       dir = Math.abs(pct) < 0.005 ? 'flat' : pct > 0 ? 'up' : 'down'
-      text = `${pct > 0 ? '+' : pct < 0 ? '−' : ''}${formatPercent(Math.abs(pct), 0)}`
+      text = formatPercent(Math.abs(pct), 0)
     }
   }
-  const Icon = dir === 'up' ? IconArrowUp : dir === 'down' ? IconArrowDown : null
+  const arrow = dir === 'up' ? '↑' : dir === 'down' ? '↓' : '→'
+  const sr = dir === 'up' ? 'en hausse de' : dir === 'down' ? 'en baisse de' : 'stable,'
   return (
-    <span className={`delta ${dir}`} title={`Période précédente : ${d.kind === 'points' ? formatPercent(d.previous) : formatNumber(d.previous)}`}>
-      {Icon && <Icon size={12} strokeWidth={2.5} />}
-      {text}
+    <span className="delta-wrap" title={`Période précédente : ${d.kind === 'points' ? formatPercent(d.previous) : formatNumber(d.previous)}`}>
+      <span className={`delta ${dir}`}>
+        <span aria-hidden="true">{arrow}</span>
+        <span className="sr-only">{sr}</span> {text}
+      </span>
+      {suffix && <span className="delta-suffix">{suffix}</span>}
     </span>
   )
 }
 
-interface KpiDef {
-  label: string
-  value: (s: DashboardSummary) => string
-  delta?: (s: DashboardSummary, p?: DashboardSummary) => Delta
-  foot?: (s: DashboardSummary) => ReactNode
-  to?: string
-  alert?: (s: DashboardSummary) => boolean
+/** Tiny bar sparkline. The last bar (most recent period) is emphasised. */
+function SparkBars({ values, label, className = '' }: { values: number[]; label: string; className?: string }) {
+  const max = Math.max(1, ...values)
+  return (
+    <div className={`spark ${className}`} role="img" aria-label={label}>
+      {values.map((v, i) => (
+        <span key={i} className={i === values.length - 1 ? 'is-last' : undefined} style={{ height: `${Math.max(v > 0 ? 6 : 2, (v / max) * 100)}%` }} />
+      ))}
+    </div>
+  )
 }
 
-const KPIS: KpiDef[] = [
-  { label: 'Appels', value: (s) => formatNumber(s.calls), delta: (s, p) => ({ kind: 'count', current: s.calls, previous: p?.calls }), foot: (s) => `${formatNumber(s.callsToday)} aujourd’hui` },
-  { label: 'Conversations', value: (s) => formatNumber(s.conversations), delta: (s, p) => ({ kind: 'count', current: s.conversations, previous: p?.conversations }), foot: (s) => (s.calls ? `${formatPercent(s.conversations / s.calls, 0)} des appels` : '') },
-  { label: 'Devis envoyés', value: (s) => formatNumber(s.quotesSent), delta: (s, p) => ({ kind: 'count', current: s.quotesSent, previous: p?.quotesSent }) },
-  { label: 'Contrats gagnés', value: (s) => formatNumber(s.won), delta: (s, p) => ({ kind: 'count', current: s.won, previous: p?.won }) },
-  { label: 'Taux de conversion', value: (s) => formatPercent(s.conversionRate), delta: (s, p) => ({ kind: 'points', current: s.conversionRate, previous: p?.conversionRate }), foot: () => 'gagnés / leads appelés' },
-  { label: 'Valeur du pipeline', value: (s) => formatCurrency(s.pipelineValue, { compact: true }), foot: () => 'Intéressés + devis envoyés', to: leadsHref({ status: ['INTERESTED', 'QUOTE_SENT'] }) },
-  { label: 'Leads à appeler', value: (s) => formatNumber(s.callableLeads), foot: (s) => `+${formatNumber(s.newLeads)} nouveaux sur la période`, to: '/call' },
-  {
-    label: 'Suivis en retard',
-    value: (s) => formatNumber(s.followUpsOverdue),
-    foot: (s) => `${formatNumber(s.followUpsDue)} prévus aujourd’hui`,
-    to: '/follow-ups',
-    alert: (s) => s.followUpsOverdue > 0,
-  },
-]
+function Tile({ className, to, children }: { className: string; to?: string; children: ReactNode }) {
+  const cls = `card tile ${className}${to ? ' is-link' : ''}`
+  return to ? (
+    <Link to={to} className={cls}>
+      {children}
+    </Link>
+  ) : (
+    <div className={cls}>{children}</div>
+  )
+}
 
-function KpiRow({ summary, prev }: { summary: UseQueryResult<DashboardSummary>; prev?: DashboardSummary }) {
+function Bento({ summary, prev, range }: { summary: UseQueryResult<DashboardSummary>; prev?: DashboardSummary; range: DateRange }) {
+  // Same key as the activity chart below: served from the TanStack Query cache, no extra request.
+  const activity = useQuery({ queryKey: ['activity', range], queryFn: () => getActivity(range) })
+  const rows = useMemo(() => (activity.data ? bucketActivity(activity.data) : null), [activity.data])
+
   if (summary.isError) {
     return (
       <div className="card">
@@ -164,40 +169,90 @@ function KpiRow({ summary, prev }: { summary: UseQueryResult<DashboardSummary>; 
       </div>
     )
   }
+  const s = summary.data
+  const days = rangeLength(range)
+  const vs = `vs ${days} j préc.`
+  const weekly = (activity.data?.length ?? 0) > 100
+  const val = (render: (s: DashboardSummary) => ReactNode, h = 40) => (s ? render(s) : <Skeleton height={h} width="50%" />)
+  const first = rows?.[0]
+  const last = rows?.[rows.length - 1]
+
   return (
-    <div className="grid kpi-grid">
-      {KPIS.map((k) => {
-        const s = summary.data
-        const content = (
-          <>
-            <span className="kpi-label">
-              {k.label}
-              {s && k.alert?.(s) && <IconAlert size={14} style={{ color: 'var(--danger)' }} />}
-            </span>
-            {s ? <span className="kpi-value">{k.value(s)}</span> : <Skeleton height={32} width="60%" />}
-            <span className="kpi-foot">
-              {s ? (
-                <>
-                  {k.delta && <DeltaPill d={k.delta(s, prev)} />}
-                  <span className="truncate">{k.foot?.(s) ?? (k.delta ? 'vs période préc.' : '')}</span>
-                </>
-              ) : (
-                <Skeleton height={12} width="45%" />
-              )}
-            </span>
-          </>
-        )
-        const cls = `card kpi${s && k.alert?.(s) ? ' alert' : ''}`
-        return k.to ? (
-          <Link key={k.label} to={k.to} className={cls}>
-            {content}
-          </Link>
-        ) : (
-          <div key={k.label} className={cls}>
-            {content}
+    <div className="bento">
+      <Tile className="tile-hero">
+        <div className="tile-head">
+          <span className="tile-label">Appels</span>
+          {s && <span className="tile-aside num">{formatNumber(s.callsToday)} aujourd’hui</span>}
+        </div>
+        <div className="tile-figure">
+          {val((x) => <span className="tile-value xl num">{formatNumber(x.calls)}</span>, 56)}
+          {s && <DeltaText d={{ kind: 'count', current: s.calls, previous: prev?.calls }} suffix={vs} />}
+        </div>
+        <div className="tile-chart">
+          {rows ? (
+            <>
+              <SparkBars values={rows.map((r) => r.calls)} label={`Appels ${weekly ? 'par semaine' : 'par jour'} sur la période`} />
+              <div className="spark-axis" aria-hidden="true">
+                <span>{first?.label}</span>
+                <span>{last?.label}</span>
+              </div>
+            </>
+          ) : activity.isError ? null : (
+            <Skeleton height="100%" />
+          )}
+        </div>
+      </Tile>
+
+      <Tile className="tile-wide">
+        <div className="tile-split">
+          <div className="tile-part">
+            <span className="tile-label">Contrats gagnés</span>
+            {val((x) => <span className="tile-value lg num">{formatNumber(x.won)}</span>, 48)}
+            {s && <DeltaText d={{ kind: 'count', current: s.won, previous: prev?.won }} suffix={vs} />}
           </div>
-        )
-      })}
+          <div className="tile-part">
+            <span className="tile-label">Taux de conversion</span>
+            {val((x) => <span className="tile-value lg num">{formatPercent(x.conversionRate)}</span>, 48)}
+            {s && <DeltaText d={{ kind: 'points', current: s.conversionRate, previous: prev?.conversionRate }} suffix="gagnés / leads appelés" />}
+          </div>
+        </div>
+      </Tile>
+
+      <Tile className="tile-sm tile-conv">
+        <span className="tile-label">Conversations</span>
+        <div className="tile-figure">
+          {val((x) => <span className="tile-value num">{formatNumber(x.conversations)}</span>)}
+          {rows && <SparkBars className="mini" values={rows.map((r) => r.conversations)} label="Conversations sur la période" />}
+        </div>
+        {s && <DeltaText d={{ kind: 'count', current: s.conversations, previous: prev?.conversations }} suffix={s.calls ? `${formatPercent(s.conversations / s.calls, 0)} des appels` : vs} />}
+      </Tile>
+
+      <Tile className="tile-sm tile-quotes">
+        <span className="tile-label">Devis envoyés</span>
+        {val((x) => <span className="tile-value num">{formatNumber(x.quotesSent)}</span>)}
+        {s && <DeltaText d={{ kind: 'count', current: s.quotesSent, previous: prev?.quotesSent }} suffix={vs} />}
+      </Tile>
+
+      <Tile className="tile-sm tile-pipe" to={leadsHref({ status: ['INTERESTED', 'QUOTE_SENT'] })}>
+        <span className="tile-label">Valeur du pipeline</span>
+        {val((x) => <span className="tile-value num">{formatCurrency(x.pipelineValue, { compact: true })}</span>)}
+        <span className="tile-foot">Intéressés + devis envoyés</span>
+      </Tile>
+
+      <Tile className="tile-sm tile-callable" to="/call">
+        <span className="tile-label">Leads à appeler</span>
+        {val((x) => <span className="tile-value num">{formatNumber(x.callableLeads)}</span>)}
+        {s && <span className="tile-foot num">+{formatNumber(s.newLeads)} nouveaux sur la période</span>}
+      </Tile>
+
+      <Tile className="tile-sm tile-overdue" to="/follow-ups">
+        <span className="tile-label">
+          Suivis en retard
+          {s && s.followUpsOverdue > 0 && <span className="tile-alert-dot" aria-hidden="true" />}
+        </span>
+        {val((x) => <span className={`tile-value num${x.followUpsOverdue > 0 ? ' is-alert' : ''}`}>{formatNumber(x.followUpsOverdue)}</span>)}
+        {s && <span className="tile-foot num">{formatNumber(s.followUpsDue)} prévus aujourd’hui</span>}
+      </Tile>
     </div>
   )
 }
@@ -577,7 +632,7 @@ function LeaderboardWidget({ range, className }: { range: DateRange; className: 
                     <td className="num muted">{i + 1}</td>
                     <td>
                       <span className="row">
-                        <span className="avatar sm">{r.username.slice(0, 2)}</span>
+                        <span className="avatar sm">{r.username.slice(0, 2).toUpperCase()}</span>
                         <span className="lead-name">{r.username}</span>
                       </span>
                     </td>
