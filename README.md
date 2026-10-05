@@ -9,11 +9,23 @@ businesses imported from open data, cold-call them, and track performance.
 - **Leads** (`/leads`): server-side paged/sorted table, filters synced to the URL,
   CSV export, detail drawer (`/leads/:id`) with status change, value/assignee, timeline
   and "Appeler maintenant".
+- **À enrichir** (`/enrich`): leads without a phone (business register, building permits…),
+  one at a time. "Chercher le numéro" opens a Google search in a new tab; the phone field
+  formats as you type ((514) 555-1234) and validates NANP numbers; Enter saves
+  (`PATCH /api/businesses/{id}/phone`) and moves to the next lead, which joins the call
+  queue. Keys work even while the phone field has focus: G search, P skip, N do-not-call.
+  Leads without a phone also get the search + add-phone control in the lead drawer.
 - **Suivis** (`/follow-ups`): follow-ups grouped as En retard / Aujourd'hui / Cette semaine.
+- **Appels d'offres** (`/tenders`): public cleaning tenders from CanadaBuys and SEAO —
+  summary strip, filters synced to the URL ("ouverts seulement" on by default), table by
+  closing date with a countdown (red under 3 days), inline status, link to the notice,
+  and a drawer (`/tenders/:id`) with status and notes (saved on blur or ⌘/Ctrl+Enter).
+  Awarded SEAO contracts show their end / renewal date instead of a closing date.
 - **Tableau de bord** (`/`): KPIs with comparison to the previous period, activity,
   pipeline, call outcomes, breakdown by type/city/source, team leaderboard.
 - **Sources** (`/sources`, ADMIN): data sources, imports and job history (polls every 3 s
-  while a job runs).
+  while a job runs). The business register (`BULK_FILE`) also takes "Importer un fichier":
+  the official ZIP (~225 MB) is uploaded with a progress bar, then imported server-side.
 
 The UI is in French. It talks to the Spring Boot backend (`Econet-leads-backend`); the
 API contract it is built against lives in the backend repo / project docs. Types in
@@ -24,6 +36,9 @@ API contract it is built against lives in the backend repo / project docs. Types
 | Dashboard | ![Dashboard](docs/screenshots/02-dashboard.png) |
 | Call screen | ![Call](docs/screenshots/03-call-desktop.png) |
 | Call screen (mobile) | ![Call mobile](docs/screenshots/04-call-mobile.png) |
+| À enrichir | ![Enrich](docs/screenshots/11-enrich.png) |
+| Appels d'offres | ![Tenders](docs/screenshots/12-tenders.png) |
+| Tender detail | ![Tender detail](docs/screenshots/13-tender-detail.png) |
 
 More in [`docs/screenshots/`](docs/screenshots/).
 
@@ -71,7 +86,11 @@ on and is used by `npm run dev:mock` (`vite --mode mock`). Put personal override
 `VITE_USE_MOCKS=true` installs a `fetch` interceptor (`src/mocks/`) that implements
 every endpoint of the contract with ~150 generated Québec businesses (CPE, cliniques,
 restaurants, bureaux… in Montréal, Laval, Longueuil, Québec, Gatineau, Sherbrooke…),
-60 days of simulated calls, due/overdue follow-ups, data sources and import jobs.
+60 days of simulated calls, due/overdue follow-ups, data sources and import jobs, plus
+~60 phone-less leads from the business register and Montréal building permits (with
+`sourceDetails`) and ~40 CanadaBuys / SEAO tenders. Adding a phone moves the lead into the
+call queue; numbers in the fictional 555-01xx range are rejected by the mock server so the
+inline server-error state can be seen. ZIP uploads are simulated with progress.
 State is kept in memory, so logging a call updates the queue, follow-ups and dashboard;
 it resets on page reload. Token expiry (15 min) and refresh are simulated too.
 
@@ -91,7 +110,7 @@ emitted in production builds.
 | `npm run build` | `tsc -b` (strict type-check) then `vite build` into `dist/` |
 | `npm run preview` | Serve `dist/` locally on :5173 |
 | `npm run lint` | ESLint (flat config, typescript-eslint, react-hooks) |
-| `npm test` | Vitest unit tests (API client refresh flow, formatting helpers) |
+| `npm test` | Vitest unit tests (API client refresh flow and uploads, formatting, phone formatter/validator, Google search URL, tender helpers) |
 
 ## Project layout
 
@@ -101,7 +120,9 @@ src/
                 session.ts (tokens in localStorage), endpoints.ts (typed calls), types.ts
   auth/         AuthContext (login/logout, role checks)
   components/   Layout (sidebar / mobile tab bar), OutcomeForm, LeadCard, CallHistory, Widget, …
-  lib/          format.ts (CAD, %, phone, French relative dates), dates.ts, status.ts (fixed colours), leadFilters.ts
+  hooks/        useSavePhone, useUpdateTender (mutations shared by several screens)
+  lib/          format.ts (CAD, %, phone, French relative dates), dates.ts, status.ts (fixed colours), leadFilters.ts,
+                phone.ts (live formatting, validation, search link), tenders.ts (status meta, countdown, URL filters)
   mocks/        dev-only mock backend
   pages/        one file per screen (+ co-located CSS)
   styles/       global.css (design tokens)
