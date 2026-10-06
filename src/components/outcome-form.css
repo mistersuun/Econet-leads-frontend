@@ -1,0 +1,111 @@
+.outcome-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.outcomes-grid {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+.outcomes-grid legend {
+  margin-bottom: 12px;
+  padding: 0;
+}
+
+/* Neutral by default; the outcome colour shows as a dot, and fills the button only once chosen. */
+.outcome-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 8px 8px 8px 12px;
+  border-radius: var(--r-control);
+  border: 1px solid var(--hairline-strong);
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 500;
+  font-size: var(--text-md);
+  text-align: left;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s, box-shadow 0.1s;
+}
+.outcome-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--oc);
+  flex: none;
+}
+.outcome-label {
+  flex: 1;
+  min-width: 0;
+}
+.outcome-btn:hover {
+  background: #fafafa;
+  border-color: var(--control-border);
+}
+.outcome-btn[aria-pressed='true'] {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--oc) 10%, white);
+  box-shadow: inset 0 0 0 1.5px var(--oc);
+  font-weight: 600;
+}
+.outcome-btn[aria-pressed='true'] kbd {
+  background: var(--card);
+  border-color: color-mix(in srgb, var(--oc) 35%, transparent);
+  color: var(--ink);
+}
+.outcome-btn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--r-control);
+}
+.outcome-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.outcome-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+.outcome-fields .span-all {
+  grid-column: 1 / -1;
+}
+.outcome-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+}
+.submit-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+@media (max-width: 560px) {
+  .outcomes-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .outcome-btn {
+    min-height: 48px;
+    padding-left: 12px;
+  }
+  .outcome-btn kbd {
+    display: none;
+  }
+  .hide-mobile {
+    display: none;
+  }
+  .outcome-actions .btn-primary {
+    flex: 1;
+  }
+}

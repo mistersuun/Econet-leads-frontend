@@ -1,0 +1,51 @@
+/* Inline status: dot + borderless select that reads like the plain dot + label. */
+.status-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.status-select .dot {
+  position: absolute;
+  left: 8px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.status-select .select {
+  width: auto;
+  height: 30px;
+  padding: 0 28px 0 23px;
+  border-color: transparent;
+  background-color: transparent;
+  background-position: right 6px center;
+  background-size: 14px;
+  border-radius: var(--r-sm);
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.status-select .select:hover:not(:disabled) {
+  border-color: var(--hairline-strong);
+  background-color: var(--card);
+}
+.status-select .select:disabled {
+  cursor: default;
+  background-image: none;
+  padding-right: 8px;
+  opacity: 1;
+}
+.status-select.md .select {
+  height: 40px;
+  font-size: var(--text-md);
+  border-color: var(--hairline-strong);
+  background-color: var(--card);
+  padding-left: 26px;
+  width: 100%;
+}
+.status-select.md {
+  display: flex;
+}
+.status-select.md .dot {
+  left: 12px;
+}
