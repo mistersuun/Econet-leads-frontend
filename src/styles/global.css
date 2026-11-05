@@ -294,8 +294,10 @@ textarea {
   font-variant-numeric: tabular-nums;
 }
 
-.sidebar-user {
+.sidebar .presence {
   margin-top: auto;
+}
+.sidebar-user {
   display: flex;
   align-items: center;
   gap: 12px;

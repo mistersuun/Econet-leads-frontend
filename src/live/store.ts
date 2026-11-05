@@ -92,3 +92,10 @@ export function teammates(presence: PresenceUser[], me: string | null | undefine
     .filter((u) => u.userId !== me)
     .sort((a, b) => rank(a.status) - rank(b.status) || a.username.localeCompare(b.username, 'fr'))
 }
+
+/** "en appel · CPE X" / "en ligne" / "hors ligne" */
+export function presenceLabel(u: PresenceUser): string {
+  if (u.status === 'calling') return u.leadName ? `en appel · ${u.leadName}` : 'en appel'
+  if (u.status === 'idle') return 'en ligne'
+  return 'hors ligne'
+}

@@ -1,10 +1,14 @@
-import { Suspense, useState, type ReactNode } from 'react'
+import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../auth/AuthContext'
 import { getSummary } from '../api/endpoints'
+import { useLiveEvent, useLiveInvalidate } from '../live/LiveProvider'
 import { ROLE_LABEL } from '../lib/status'
+import { NotificationsBell } from './NotificationsBell'
 import { SkeletonRows } from './States'
+import { TeamPresence } from './TeamPresence'
+import { useToast } from './Toast'
 import {
   IconCalendarClock,
   IconDashboard,
@@ -15,6 +19,7 @@ import {
   IconMore,
   IconPhone,
   IconPhonePlus,
+  IconSettings,
   IconUsers,
 } from './icons'
 
@@ -38,7 +43,28 @@ export function Layout() {
   const { user, logout, hasRole } = useAuth()
   const [sheetOpen, setSheetOpen] = useState(false)
   const location = useLocation()
+  const toast = useToast()
   const summary = useQuery({ queryKey: ['summary', 'nav'], queryFn: () => getSummary(), staleTime: 60_000 })
+  const bannerRef = useRef<HTMLDivElement>(null)
+
+  // The call screen fits the viewport exactly; tell it how tall the chrome above it is.
+  useEffect(() => {
+    const el = bannerRef.current
+    const set = () => document.documentElement.style.setProperty('--banner-h', `${el?.offsetHeight ?? 0}px`)
+    set()
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(set)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  // Keep every screen in step with the team, and celebrate a teammate's win.
+  useLiveInvalidate()
+  useLiveEvent((e) => {
+    if (e.type === 'call.logged' && e.data.outcome === 'WON' && e.data.userId !== user?.userId) {
+      toast(`${e.data.username} a gagné un contrat — ${e.data.leadName}`)
+    }
+  })
   const overdue = (summary.data?.followUpsOverdue ?? 0) + (summary.data?.followUpsDue ?? 0)
   const toEnrich = summary.data?.toEnrich ?? 0
 
@@ -49,7 +75,12 @@ export function Layout() {
     { to: '/leads', label: 'Leads', short: 'Leads', icon: IconUsers, tab: true },
     { to: '/follow-ups', label: 'Suivis', short: 'Suivis', icon: IconCalendarClock, badge: overdue, tab: true },
     { to: '/tenders', label: 'Appels d’offres', short: 'Offres', icon: IconFileText },
-    ...(hasRole('ADMIN') ? [{ to: '/sources', label: 'Sources', short: 'Sources', icon: IconDatabase }] : []),
+    ...(hasRole('ADMIN')
+      ? [
+          { to: '/sources', label: 'Sources', short: 'Sources', icon: IconDatabase },
+          { to: '/settings', label: 'Réglages', short: 'Réglages', icon: IconSettings },
+        ]
+      : []),
   ]
   const tabs = items.filter((it) => it.tab)
   const more = items.filter((it) => !it.tab)
@@ -81,7 +112,9 @@ export function Layout() {
               {!!it.count && <span className="nav-count" aria-label={`${it.count} leads sans téléphone`}>{it.count}</span>}
             </NavLink>
           ))}
+          <NotificationsBell />
         </nav>
+        <TeamPresence />
         <div className="sidebar-user">
           <span className="avatar" aria-hidden="true">{initials}</span>
           <div className="who">
@@ -95,7 +128,7 @@ export function Layout() {
       </aside>
 
       <div className="main">
-        {MOCKS && <div className="mock-banner">Mode démo — données simulées<span className="hide-sm"> en mémoire (VITE_USE_MOCKS=true)</span></div>}
+        {MOCKS && <div className="mock-banner" ref={bannerRef}>Mode démo — données simulées<span className="hide-sm"> en mémoire (VITE_USE_MOCKS=true)</span></div>}
         <header className="topbar">
           <div className="brand">
             <span className="brand-mark">
@@ -104,6 +137,7 @@ export function Layout() {
             EcoNet Leads
           </div>
           <span className="spacer" />
+          <NotificationsBell compact />
           <span className="avatar" style={{ width: 28, height: 28 }} aria-label={user?.username}>
             {initials}
           </span>

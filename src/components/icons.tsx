@@ -214,3 +214,49 @@ export const IconUpload = make(
   </>,
   'IconUpload',
 )
+export const IconBell = make(
+  <>
+    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+    <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+  </>,
+  'IconBell',
+)
+export const IconSettings = make(
+  <>
+    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+    <circle cx="12" cy="12" r="3" />
+  </>,
+  'IconSettings',
+)
+export const IconPause = make(
+  <>
+    <rect x="6" y="4" width="4" height="16" rx="1" />
+    <rect x="14" y="4" width="4" height="16" rx="1" />
+  </>,
+  'IconPause',
+)
+export const IconStop = make(<rect x="5" y="5" width="14" height="14" rx="2" />, 'IconStop')
+export const IconCopy = make(
+  <>
+    <rect x="9" y="9" width="13" height="13" rx="2" />
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+  </>,
+  'IconCopy',
+)
+export const IconScript = make(
+  <>
+    <path d="M4 4h12a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2V4z" />
+    <path d="M18 8h2a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2h-1" />
+    <path d="M8 8h6M8 12h6M8 16h3" />
+  </>,
+  'IconScript',
+)
+export const IconChevronUp = make(<path d="m18 15-6-6-6 6" />, 'IconChevronUp')
+export const IconSend = make(
+  <>
+    <path d="m22 2-7 20-4-9-9-4z" />
+    <path d="M22 2 11 13" />
+  </>,
+  'IconSend',
+)
+export const IconZap = make(<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />, 'IconZap')
