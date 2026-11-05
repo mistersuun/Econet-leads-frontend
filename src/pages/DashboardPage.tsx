@@ -33,6 +33,7 @@ import { presetRange, previousRange, rangeLength, type RangePreset } from '../li
 import { formatCurrency, formatDate, formatNumber, formatPercent } from '../lib/format'
 import { leadsHref } from '../lib/leadFilters'
 import { OUTCOME_META, PALETTE, STATUS_META } from '../lib/status'
+import { BestHoursWidget, ConversionByTypeWidget, FunnelWidget, LiveFeedWidget, TeamTodayWidget } from './dashboard/InsightWidgets'
 import './dashboard.css'
 
 const SERIES = {
@@ -90,9 +91,14 @@ export default function DashboardPage() {
 
       <div className="grid dash-grid" style={{ marginTop: 16 }}>
         <ActivityWidget range={range} className="span-8" />
+        <LiveFeedWidget className="span-4" />
+        <FunnelWidget range={range} className="span-5" />
+        <BestHoursWidget range={range} className="span-7" />
+        <TeamTodayWidget className="span-4" />
         <PipelineWidget className="span-4" />
-        <OutcomesWidget range={range} className="span-5" />
-        <LeaderboardWidget range={range} className="span-7" />
+        <OutcomesWidget range={range} className="span-4" />
+        <LeaderboardWidget range={range} className="span-6" />
+        <ConversionByTypeWidget className="span-6" />
         <BreakdownWidget className="span-12" />
       </div>
     </div>
