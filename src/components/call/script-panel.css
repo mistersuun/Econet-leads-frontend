@@ -1,0 +1,111 @@
+.script {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  height: 100%;
+}
+.script-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.script-head .segmented button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.script-head .segmented button kbd {
+  height: 16px;
+  min-width: 16px;
+  font-size: 10px;
+}
+.script-lang button {
+  padding: 0 10px;
+}
+.script-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  font-size: var(--text-base);
+  line-height: 1.55;
+  color: var(--ink);
+}
+.script-body p {
+  margin: 0 0 12px;
+}
+.script-body p:last-child {
+  margin-bottom: 0;
+}
+.script-list {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.script-list li {
+  position: relative;
+  padding-left: 16px;
+}
+.script-list li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0.62em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--sage);
+}
+.objections {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.objections li {
+  border-bottom: 1px solid var(--hairline);
+}
+.objections li:last-child {
+  border-bottom: 0;
+}
+.objection-q {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  font-weight: 500;
+  font-size: var(--text-md);
+  color: var(--ink);
+  cursor: pointer;
+}
+.objection-q svg {
+  color: var(--muted);
+  flex: none;
+  transition: transform 0.15s;
+}
+.objections li.open .objection-q svg {
+  transform: rotate(180deg);
+}
+.objection-a {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--mint);
+  color: var(--deep);
+  font-size: var(--text-md);
+}
+.script-foot {
+  border-top: 1px solid var(--hairline);
+  padding-top: 8px;
+}

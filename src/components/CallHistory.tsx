@@ -1,4 +1,5 @@
 import type { ContactDTO } from '../api/types'
+import { formatDuration } from '../lib/callSession'
 import { formatDateTime, formatRelative } from '../lib/format'
 import { outcomeColor, outcomeLabel } from '../lib/status'
 import { IconCalendarClock, IconUser } from './icons'
@@ -17,6 +18,7 @@ export function CallHistory({ contacts, compact }: { contacts: ContactDTO[]; com
               <strong>{c.outcome ? outcomeLabel(c.outcome) : TYPE_LABEL[c.contactType] ?? c.contactType}</strong>
               <span className="muted xs" title={formatDateTime(c.contactDate)}>
                 {formatRelative(c.contactDate)} · {formatDateTime(c.contactDate)}
+                {c.durationSeconds ? ` · ${formatDuration(c.durationSeconds)}` : ''}
               </span>
             </div>
             {(c.username || c.contactPerson) && (
@@ -29,7 +31,7 @@ export function CallHistory({ contacts, compact }: { contacts: ContactDTO[]; com
                 )}
               </div>
             )}
-            {c.notes && <p className="tl-notes">{c.notes}</p>}
+            {c.notes && <p className={`tl-notes${c.contactType === 'EMAIL' ? ' tl-email' : ''}`}>{c.notes}</p>}
             {c.nextActionDate && (
               <div className="xs muted row" style={{ gap: 4 }}>
                 <IconCalendarClock size={13} /> {c.nextAction ?? 'Suivi'} · {formatDateTime(c.nextActionDate)}

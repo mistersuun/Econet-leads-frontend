@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { logCall } from '../api/endpoints'
-import { CALL_OUTCOMES, type BusinessDTO, type CallOutcome, type LogCallResponse } from '../api/types'
+import { CALL_OUTCOMES, type BusinessDTO, type CallOutcome, type LogCallRequest, type LogCallResponse } from '../api/types'
 import { defaultFollowUp } from '../lib/dates'
 import { errorMessage } from '../lib/errors'
 import { toApiDateTime, toInputDateTime } from '../lib/format'
@@ -18,6 +18,12 @@ interface Props {
   submitLabel?: string
   onLogged?: (res: LogCallResponse) => void
   extraActions?: ReactNode
+  /** Extra fields merged into the request at submit time (timer duration, qualification…). */
+  extras?: () => Partial<LogCallRequest>
+  /** An outcome was picked (the call screen stops its timer here). */
+  onOutcomeChosen?: (outcome: CallOutcome) => void
+  /** Denser layout for the call screen's outcome column. */
+  compact?: boolean
 }
 
 function isTypingTarget(el: EventTarget | null) {
@@ -25,7 +31,7 @@ function isTypingTarget(el: EventTarget | null) {
   return el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)
 }
 
-export function OutcomeForm({ lead, disabled, shortcuts, submitLabel = 'Enregistrer l’appel', onLogged, extraActions }: Props) {
+export function OutcomeForm({ lead, disabled, shortcuts, submitLabel = 'Enregistrer l’appel', onLogged, extraActions, extras, onOutcomeChosen, compact }: Props) {
   const id = useId()
   const toast = useToast()
   const qc = useQueryClient()
@@ -43,6 +49,7 @@ export function OutcomeForm({ lead, disabled, shortcuts, submitLabel = 'Enregist
       const d = defaultFollowUp(o)
       setFollowUp(d ? toInputDateTime(d) : '')
     }
+    onOutcomeChosen?.(o)
   }
 
   const mutation = useMutation({
@@ -50,6 +57,7 @@ export function OutcomeForm({ lead, disabled, shortcuts, submitLabel = 'Enregist
       const meta = OUTCOME_META[outcome!]
       const v = value.trim() ? Number(value.replace(/\s/g, '').replace(',', '.')) : undefined
       return logCall(lead.id, {
+        ...(extras?.() ?? {}),
         outcome: outcome!,
         notes: notes.trim() || undefined,
         contactPerson: contactPerson.trim() || undefined,
@@ -61,7 +69,7 @@ export function OutcomeForm({ lead, disabled, shortcuts, submitLabel = 'Enregist
       toast(`${OUTCOME_META[outcome!].label} — ${res.lead.businessName}`)
       qc.setQueryData(['lead', res.lead.id], res.lead)
       void qc.invalidateQueries({ queryKey: ['contacts', res.lead.id] })
-      for (const key of ['summary', 'leads', 'pipeline', 'activity', 'outcomes', 'leaderboard', 'breakdown', 'followups']) {
+      for (const key of ['summary', 'leads', 'pipeline', 'activity', 'outcomes', 'leaderboard', 'breakdown', 'followups', 'today', 'funnel', 'best-hours', 'team-today', 'notifications']) {
         void qc.invalidateQueries({ queryKey: [key] })
       }
       onLogged?.(res)
@@ -104,7 +112,7 @@ export function OutcomeForm({ lead, disabled, shortcuts, submitLabel = 'Enregist
   const meta = outcome ? OUTCOME_META[outcome] : null
 
   return (
-    <form ref={formRef} className="outcome-form" onSubmit={submit} aria-disabled={disabled}>
+    <form ref={formRef} className={`outcome-form${compact ? ' compact' : ''}`} onSubmit={submit} aria-disabled={disabled}>
       <fieldset className="outcomes-grid" disabled={disabled}>
         <legend className="field-label">Résultat de l’appel</legend>
         {CALL_OUTCOMES.map((o, i) => {

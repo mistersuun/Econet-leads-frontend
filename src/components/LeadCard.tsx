@@ -39,10 +39,18 @@ function mapsHref(lead: BusinessDTO) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
 }
 
-export function LeadCard({ lead }: { lead: BusinessDTO }) {
+interface LeadCardProps {
+  lead: BusinessDTO
+  /** Tighter type sizes for a narrow column. */
+  compact?: boolean
+  /** The number was tapped/clicked (the call screen starts its timer). */
+  onCall?: () => void
+}
+
+export function LeadCard({ lead, compact, onCall }: LeadCardProps) {
   const address = [lead.addressStreet, lead.addressCity].filter(Boolean).join(', ')
   return (
-    <div className="lead-card">
+    <div className={`lead-card${compact ? ' compact' : ''}`}>
       <div className="lead-card-head">
         <div className="lead-card-tags">
           <StatusBadge status={lead.leadStatus} />
@@ -55,7 +63,7 @@ export function LeadCard({ lead }: { lead: BusinessDTO }) {
         </div>
       </div>
       {lead.phone ? (
-        <a className="phone-cta" href={telHref(lead.phone)} aria-label={`Appeler le ${formatPhone(lead.phone)}`}>
+        <a className="phone-cta" href={telHref(lead.phone)} aria-label={`Appeler le ${formatPhone(lead.phone)}`} onClick={onCall}>
           <span className="phone-cta-number num">{formatPhone(lead.phone)}</span>
           <span className="phone-cta-icon" aria-hidden="true">
             <IconPhone size={20} />
