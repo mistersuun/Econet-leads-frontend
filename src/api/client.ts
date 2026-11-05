@@ -6,12 +6,15 @@ export const API_URL: string = (import.meta.env.VITE_API_URL || 'http://localhos
 export class ApiError extends Error {
   readonly status: number
   readonly fields?: Record<string, string>
+  /** The parsed JSON error body, for endpoints that add context (e.g. 409 claim → `claimedBy`). */
+  readonly data?: Record<string, unknown>
 
-  constructor(message: string, status: number, fields?: Record<string, string>) {
+  constructor(message: string, status: number, fields?: Record<string, string>, data?: Record<string, unknown>) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.fields = fields
+    this.data = data
   }
 }
 
@@ -47,13 +50,15 @@ const AUTH_PATHS = ['/api/auth/login', '/api/auth/refresh']
 async function parseError(res: Response): Promise<ApiError> {
   let message = `Erreur ${res.status}`
   let fields: Record<string, string> | undefined
+  let data: Record<string, unknown> | undefined
   try {
     const text = await res.text()
     if (text) {
       try {
-        const data = JSON.parse(text) as { error?: string; message?: string; fields?: Record<string, string> }
-        message = data.error || data.message || message
-        fields = data.fields
+        const parsed = JSON.parse(text) as { error?: string; message?: string; fields?: Record<string, string> }
+        message = parsed.error || parsed.message || message
+        fields = parsed.fields
+        if (parsed && typeof parsed === 'object') data = parsed as Record<string, unknown>
       } catch {
         message = text.length < 200 ? text : message
       }
@@ -63,7 +68,7 @@ async function parseError(res: Response): Promise<ApiError> {
   }
   if (res.status === 401 && message === `Erreur ${res.status}`) message = 'Session expirée, veuillez vous reconnecter.'
   if (res.status === 403 && message === `Erreur ${res.status}`) message = "Vous n'avez pas les droits pour cette action."
-  return new ApiError(message, res.status, fields)
+  return new ApiError(message, res.status, fields, data)
 }
 
 let refreshInFlight: Promise<boolean> | null = null

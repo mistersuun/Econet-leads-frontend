@@ -14,36 +14,27 @@ import type {
   TenderStatus,
 } from '../api/types'
 import { CALL_OUTCOMES, LEAD_STATUSES, TENDER_SOURCES, TENDER_STATUSES } from '../api/types'
-import { CONVERSATION_OUTCOMES, TERMINAL, applyCall, createDb, parseLocal, queueFor, startOfDay, type Db } from './db'
+import { CLAIM_TTL_MS, CONVERSATION_OUTCOMES, TERMINAL, applyCall, createDb, parseLocal, queueFor, startOfDay, type Db } from './db'
+import { broadcastPresence, emitProgress, handle3 } from './handlers3'
+import { HttpError, type Req, type Result } from './http'
+import { emit } from './live'
 import { USERS, isoLocal, makeLead, mockId, type MockUser } from './seed'
 import { NEW_SOURCE_NAMES, makeImportedTender, makePermitLead, makeRegisterLead } from './seedSources'
+import { teammateFor } from './simulation'
 
 const ACCESS_TTL_MS = 15 * 60_000
 
-class HttpError extends Error {
-  status: number
-  fields?: Record<string, string>
-  constructor(status: number, message: string, fields?: Record<string, string>) {
-    super(message)
-    this.status = status
-    this.fields = fields
-  }
-}
-
-interface Req {
-  method: string
-  path: string
-  query: URLSearchParams
-  body: unknown
-  headers: Headers
-}
-
-type Result = { status?: number; json?: unknown; text?: string; contentType?: string }
-
 let db: Db | null = null
-function getDb(): Db {
+export function getDb(): Db {
   if (!db) db = createDb(new Date())
   return db
+}
+
+/** Shared with the fake EventSource: the userId behind an access token, or null. */
+export function userIdForToken(token: string): string | null {
+  const m = /^mock-access\.([^.]+)\.(\d+)$/.exec(token)
+  if (!m || Number(m[2]) < Date.now()) return null
+  return USERS.find((u) => u.userId === m[1])?.userId ?? null
 }
 
 // ---------- auth helpers
@@ -66,6 +57,7 @@ function authUser(req: Req): MockUser {
   if (Number(m[2]) < Date.now()) throw new HttpError(401, 'Jeton expiré')
   const user = USERS.find((u) => u.userId === m[1])
   if (!user) throw new HttpError(401, 'Utilisateur inconnu')
+  getDb().lastActivity.set(user.userId, Date.now())
   return user
 }
 
@@ -255,9 +247,9 @@ export function handle(req: Req): Result {
   }
   if (method === 'GET' && path === '/api/businesses/export.csv') {
     const list = sortLeads(filterLeads(d, q, user, now), q.get('sortBy') ?? 'createdAt', q.get('sortDirection') ?? 'DESC')
-    const header = 'name,type,phone,email,website,street,city,postal_code,status,last_contacted,next_follow_up,quality,source'
+    const header = 'name,type,phone,email,website,street,city,postal_code,status,last_contacted,next_follow_up,quality,source,decision_maker,current_provider,contract_ends_at,employees'
     const rows = list.map((l) =>
-      [l.businessName, l.businessType, l.phone, l.email, l.website, l.addressStreet, l.addressCity, l.postalCode, l.leadStatus, l.lastContactedAt, l.nextFollowUpAt, l.dataQualityScore, l.dataSource]
+      [l.businessName, l.businessType, l.phone, l.email, l.website, l.addressStreet, l.addressCity, l.postalCode, l.leadStatus, l.lastContactedAt, l.nextFollowUpAt, l.dataQualityScore, l.dataSource, l.qualification?.decisionMaker, l.qualification?.currentProvider, l.qualification?.contractEndsAt, l.qualification?.employees]
         .map(csvCell)
         .join(','),
     )
@@ -271,9 +263,14 @@ export function handle(req: Req): Result {
     lead.leadStatus = status
     if (TERMINAL.includes(status)) lead.nextFollowUpAt = null
     lead.updatedAt = isoLocal(now)
+    if (d.claims.get(lead.id)?.userId === user.userId) {
+      d.claims.delete(lead.id)
+      emit('lead.released', { leadId: lead.id, userId: user.userId })
+    }
+    emit('lead.updated', { leadId: lead.id, leadStatus: lead.leadStatus, nextFollowUpAt: lead.nextFollowUpAt })
     if (note) {
       d.contacts.push({
-        id: mockId('c'), businessId: lead.id, businessName: lead.businessName, contactDate: isoLocal(now), contactType: 'EMAIL',
+        id: mockId('c'), businessId: lead.id, businessName: lead.businessName, contactDate: isoLocal(now), contactType: 'NOTE',
         contactStatus: 'NOTE', contactPerson: null, notes: note, nextAction: null, nextActionDate: null,
         userId: user.userId, username: user.username, outcome: null, createdAt: isoLocal(now),
       })
@@ -318,14 +315,38 @@ export function handle(req: Req): Result {
 
   // Calling
   if (method === 'GET' && path === '/api/leads/queue') {
-    return { json: queueFor(d, user, now, Number(q.get('size') ?? 20)) }
+    const num = (k: string) => (q.get(k) ? Number(q.get(k)) : undefined)
+    const list = queueFor(d, user, now, Number(q.get('size') ?? 20), {
+      businessType: q.getAll('businessType'),
+      city: q.getAll('city'),
+      sourceIn: q.getAll('sourceIn'),
+      minQualityScore: num('minQualityScore'),
+      followUpsOnly: bool(q, 'followUpsOnly'),
+      newOnly: bool(q, 'newOnly'),
+    })
+    d.lastQueue.set(user.userId, list.map((l) => l.id))
+    // Once per demo: a teammate silently takes the 4th lead right after this
+    // response (as if the lead.claimed event was missed), so the 409 path shows.
+    if (!d.sneakyClaimDone && list.length > 3 && user.role !== 'VIEWER') {
+      d.sneakyClaimDone = true
+      const mate = teammateFor(user.userId)
+      d.claims.set(list[3].id, { leadId: list[3].id, userId: mate.userId, username: mate.username, expiresAt: now.getTime() + CLAIM_TTL_MS })
+    }
+    return { json: list }
   }
   if ((m = /^\/api\/leads\/([^/]+)\/calls$/.exec(path)) && method === 'POST') {
     requireRole(user, 'ADMIN', 'USER')
     const lead = findLead(d, m[1])
     const body = (req.body ?? {}) as LogCallRequest
     if (!body.outcome || !CALL_OUTCOMES.includes(body.outcome)) throw new HttpError(400, 'Résultat d’appel requis', { outcome: 'Requis' })
+    if (body.durationSeconds !== undefined && (!Number.isFinite(body.durationSeconds) || body.durationSeconds < 0)) throw new HttpError(400, 'Durée invalide', { durationSeconds: 'Nombre de secondes attendu' })
+    const held = d.claims.get(lead.id)?.userId === user.userId
     const contact = applyCall(d, lead, user, body, now)
+    emit('call.logged', { contactId: contact.id, leadId: lead.id, leadName: lead.businessName, userId: user.userId, username: user.username, outcome: body.outcome, durationSeconds: contact.durationSeconds ?? null, at: contact.contactDate })
+    emit('lead.updated', { leadId: lead.id, leadStatus: lead.leadStatus, nextFollowUpAt: lead.nextFollowUpAt })
+    if (held) emit('lead.released', { leadId: lead.id, userId: user.userId })
+    emitProgress(d, user, now)
+    broadcastPresence(d, now)
     return { json: { lead, contact } }
   }
   if ((m = /^\/api\/contacts\/business\/([^/]+)$/.exec(path)) && method === 'GET') {
@@ -484,6 +505,7 @@ export function handle(req: Req): Result {
         tender.notes = body.notes?.trim() ? body.notes : null
       }
       tender.updatedAt = isoLocal(now)
+      emit('tender.updated', { tenderId: tender.id, status: tender.status })
       return { json: tender }
     }
   }
@@ -551,6 +573,9 @@ export function handle(req: Req): Result {
     }
   }
 
+  const r3 = handle3(req, d, user, now)
+  if (r3) return r3
+
   throw new HttpError(404, `Route simulée inconnue : ${method} ${path}`)
 }
 
@@ -566,7 +591,7 @@ export function toResponse(fn: () => Result): Response {
     })
   } catch (e) {
     if (e instanceof HttpError) {
-      return new Response(JSON.stringify({ error: e.message, ...(e.fields ? { fields: e.fields } : {}) }), {
+      return new Response(JSON.stringify({ error: e.message, ...(e.fields ? { fields: e.fields } : {}), ...(e.extra ?? {}) }), {
         status: e.status,
         headers: { 'Content-Type': 'application/json' },
       })

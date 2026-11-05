@@ -2,7 +2,10 @@
 // `import.meta.env.VITE_USE_MOCKS === 'true'`, so it is dropped from
 // production builds. It patches window.fetch for requests to VITE_API_URL/api.
 import { API_URL, setUploadTransport } from '../api/client'
-import { handle, toResponse } from './handlers'
+import { getDb, handle, toResponse, userIdForToken } from './handlers'
+import { presenceUsers } from './handlers3'
+import { installMockEventSource, openStreams, setLiveHooks } from './live'
+import { startSimulation, stopSimulation } from './simulation'
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -57,5 +60,19 @@ export function installMocks(): void {
     )
     return { status: res.status === 200 ? 202 : res.status, text: await res.text() }
   })
+  // Server-sent events: presence on connect, then a fake teammate at work.
+  setLiveHooks({
+    authenticate: userIdForToken,
+    onOpen: (userId, send) => {
+      const d = getDb()
+      d.lastActivity.set(userId, Date.now())
+      send('presence', { users: presenceUsers(d, new Date()) })
+      startSimulation(getDb, userId)
+    },
+    onClose: () => {
+      if (openStreams() === 0) stopSimulation()
+    },
+  })
+  installMockEventSource(`${API_URL}/api/events`)
   console.info('%c[EcoNet] Mode démo : API simulée en mémoire', 'color:#2f7a5c;font-weight:bold')
 }

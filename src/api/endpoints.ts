@@ -1,6 +1,28 @@
 import { apiDownload, apiFetch, apiUpload, type Query, type UploadProgress } from './client'
 import type {
   ActivityPoint,
+  AppNotification,
+  BestHourCell,
+  CallScript,
+  ClaimResponse,
+  ConversionByTypeRow,
+  EmailPreview,
+  EmailStatus,
+  EmailTemplate,
+  EmailTemplateUpdate,
+  Estimate,
+  EstimateInput,
+  Funnel,
+  Qualification,
+  QueueParams,
+  ScriptLanguage,
+  ScriptUpsert,
+  SendEmailRequest,
+  SendEmailResponse,
+  SnoozeRequest,
+  TeamTodayRow,
+  TodayStats,
+  UserTargets,
   AuthResponse,
   BreakdownDimension,
   BreakdownRow,
@@ -70,14 +92,67 @@ export const exportLeadsCsv = (p: LeadListParams) => {
 }
 
 // ---- Calling
-export const getQueue = (size = 20) => apiFetch<BusinessDTO[]>('/api/leads/queue', { query: { size } })
+export const getQueue = (p: QueueParams | number = 20) => {
+  const params: QueueParams = typeof p === 'number' ? { size: p } : p
+  return apiFetch<BusinessDTO[]>('/api/leads/queue', {
+    query: {
+      size: params.size ?? 20,
+      businessType: params.businessType?.length ? params.businessType : undefined,
+      city: params.city?.length ? params.city : undefined,
+      sourceIn: params.sourceIn?.length ? params.sourceIn : undefined,
+      minQualityScore: params.minQualityScore,
+      followUpsOnly: params.followUpsOnly || undefined,
+      newOnly: params.newOnly || undefined,
+    },
+  })
+}
+export const claimLead = (id: string) => apiFetch<ClaimResponse>(`/api/leads/${id}/claim`, { method: 'POST' })
+export const releaseLead = (id: string) => apiFetch<void>(`/api/leads/${id}/claim`, { method: 'DELETE' })
+export const snoozeLead = (id: string, body: SnoozeRequest) =>
+  apiFetch<BusinessDTO>(`/api/leads/${id}/snooze`, { method: 'POST', body })
+export const getQualification = (id: string) => apiFetch<Qualification>(`/api/businesses/${id}/qualification`)
+export const patchQualification = (id: string, body: Qualification) =>
+  apiFetch<Qualification>(`/api/businesses/${id}/qualification`, { method: 'PATCH', body })
 export const logCall = (id: string, body: LogCallRequest) =>
   apiFetch<LogCallResponse>(`/api/leads/${id}/calls`, { method: 'POST', body })
 export const getContacts = (businessId: string) => apiFetch<ContactDTO[]>(`/api/contacts/business/${businessId}`)
 export const getUpcomingContacts = (days = 7) => apiFetch<ContactDTO[]>('/api/contacts/upcoming', { query: { days } })
 
+// ---- Scripts
+export const getScript = (businessType: string | null | undefined, language: ScriptLanguage) =>
+  apiFetch<CallScript>('/api/scripts', { query: { businessType: businessType ?? undefined, language } })
+export const listScripts = () => apiFetch<CallScript[]>('/api/scripts/all')
+export const updateScript = (id: string, body: ScriptUpsert) => apiFetch<CallScript>(`/api/scripts/${id}`, { method: 'PUT', body })
+export const createScript = (body: ScriptUpsert) => apiFetch<CallScript>('/api/scripts', { method: 'POST', body })
+
+// ---- Targets, today, team
+export const getMyTargets = () => apiFetch<UserTargets>('/api/me/targets')
+export const updateMyTargets = (body: UserTargets) => apiFetch<UserTargets>('/api/me/targets', { method: 'PUT', body })
+export const updateUserTargets = (userId: string, body: UserTargets) =>
+  apiFetch<UserTargets>(`/api/users/${userId}/targets`, { method: 'PUT', body })
+export const getUserTargets = (userId: string) => apiFetch<UserTargets>(`/api/users/${userId}/targets`)
+export const getMyToday = () => apiFetch<TodayStats>('/api/dashboard/me/today')
+export const getTeamToday = () => apiFetch<TeamTodayRow[]>('/api/dashboard/team/today')
+
+// ---- Email
+export const getEmailStatus = () => apiFetch<EmailStatus>('/api/email/status')
+export const listEmailTemplates = () => apiFetch<EmailTemplate[]>('/api/email/templates')
+export const updateEmailTemplate = (id: string, body: EmailTemplateUpdate) =>
+  apiFetch<EmailTemplate>(`/api/email/templates/${id}`, { method: 'PUT', body })
+export const estimatePricing = (body: EstimateInput) => apiFetch<Estimate>('/api/pricing/estimate', { method: 'POST', body })
+export const previewEmail = (leadId: string, body: SendEmailRequest, signal?: AbortSignal) =>
+  apiFetch<EmailPreview>(`/api/leads/${leadId}/emails/preview`, { method: 'POST', body, signal })
+export const sendEmail = (leadId: string, body: SendEmailRequest) =>
+  apiFetch<SendEmailResponse>(`/api/leads/${leadId}/emails`, { method: 'POST', body })
+
+// ---- Notifications
+export const getNotifications = () => apiFetch<AppNotification[]>('/api/notifications')
+
 // ---- Dashboard
 const range = (r?: DateRange): Query => (r ? { from: r.from, to: r.to } : {})
+export const getFunnel = (r?: DateRange) => apiFetch<Funnel>('/api/dashboard/funnel', { query: range(r) })
+export const getBestHours = (r?: DateRange) => apiFetch<BestHourCell[]>('/api/dashboard/best-hours', { query: range(r) })
+export const getConversionByType = () => apiFetch<ConversionByTypeRow[]>('/api/dashboard/conversion-by-type')
 export const getSummary = (r?: DateRange) => apiFetch<DashboardSummary>('/api/dashboard/summary', { query: range(r) })
 export const getPipeline = (r?: DateRange) => apiFetch<PipelineEntry[]>('/api/dashboard/pipeline', { query: range(r) })
 export const getActivity = (r: DateRange) => apiFetch<ActivityPoint[]>('/api/dashboard/activity', { query: range(r) })
