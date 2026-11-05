@@ -55,4 +55,17 @@
   .today-meta {
     display: none;
   }
+  .today-line {
+    flex-wrap: wrap;
+    white-space: normal;
+    row-gap: 0;
+  }
+  .today-sep {
+    flex-basis: 100%;
+    height: 0;
+    margin: 0;
+  }
+  .today-mini {
+    display: none;
+  }
 }

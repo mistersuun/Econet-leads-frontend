@@ -217,7 +217,14 @@
   font-size: var(--text-sm);
 }
 @media (max-width: 860px) {
-  /* Phones: the number is the primary control, big and thumb-reachable. */
+  /* Phones: the number is the primary control, big and thumb-reachable; secondary facts stay in the drawer. */
+  .lead-card.compact .lead-facts > .fact-secondary {
+    display: none;
+  }
+  .lead-card.compact .lead-facts > div:nth-last-child(3) {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
   .lead-card.compact .phone-cta {
     min-height: 72px;
   }

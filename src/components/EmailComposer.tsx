@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError } from '../api/client'
 import { estimatePricing, getEmailStatus, previewEmail, sendEmail } from '../api/endpoints'
-import type { AreaRange, BusinessDTO, EmailTemplateKey, EstimateInput, PropertyType, ScriptLanguage, SendEmailRequest, ServiceId } from '../api/types'
+import type { AreaRange, BusinessDTO, EmailTemplateKey, Estimate, EstimateInput, PropertyType, ScriptLanguage, SendEmailRequest, ServiceId } from '../api/types'
 import { errorMessage } from '../lib/errors'
 import { formatCurrency, toApiDateTime, toInputDateTime } from '../lib/format'
 import { SkeletonRows } from './States'
@@ -254,49 +254,7 @@ export function EmailComposer({ lead, defaultTo, defaultLanguage, defaultTemplat
                 </div>
                 <dl className="estimate-lines" aria-live="polite">
                   {priced.data ? (
-                    <>
-                      <div>
-                        <dt>Prix de base</dt>
-                        <dd className="num">{formatCurrency(priced.data.base)}</dd>
-                      </div>
-                      {priced.data.areaAdjustment !== 0 && (
-                        <div>
-                          <dt>Ajustement superficie (×{priced.data.areaMultiplier})</dt>
-                          <dd className="num">{formatCurrency(priced.data.areaAdjustment)}</dd>
-                        </div>
-                      )}
-                      {priced.data.propertyTypeAdjustment !== 0 && (
-                        <div>
-                          <dt>Type de propriété (×{priced.data.propertyTypeMultiplier})</dt>
-                          <dd className="num">{formatCurrency(priced.data.propertyTypeAdjustment)}</dd>
-                        </div>
-                      )}
-                      {priced.data.addOns.map((a) => (
-                        <div key={a.id}>
-                          <dt>{ADD_ONS.find((x) => x.id === a.id)?.label ?? a.name}</dt>
-                          <dd className="num">{formatCurrency(a.price)}</dd>
-                        </div>
-                      ))}
-                      {priced.data.discount > 0 && (
-                        <div>
-                          <dt>Rabais fréquence ({Math.round(priced.data.discountRate * 100)} %)</dt>
-                          <dd className="num">−{formatCurrency(priced.data.discount)}</dd>
-                        </div>
-                      )}
-                      <div>
-                        <dt>Sous-total</dt>
-                        <dd className="num">{formatCurrency(priced.data.subtotal)}</dd>
-                      </div>
-                      <div>
-                        <dt>Taxes (TPS + TVQ)</dt>
-                        <dd className="num">{formatCurrency(priced.data.taxes)}</dd>
-                      </div>
-                      <div className="total">
-                        <dt>Total par visite</dt>
-                        <dd className="num">{formatCurrency(priced.data.total)}</dd>
-                      </div>
-                      {priced.data.quoteRequired && <div className="xs muted span">Plus de 2 500 pi² : prix confirmé après visite.</div>}
-                    </>
+                    <EstimateLines e={priced.data} />
                   ) : priced.isError ? (
                     <div className="xs text-danger span">{errorMessage(priced.error)}</div>
                   ) : (
@@ -360,6 +318,50 @@ export function EmailComposer({ lead, defaultTo, defaultLanguage, defaultTemplat
           )}
         </footer>
       </aside>
+    </>
+  )
+}
+
+function EstimateLines({ e }: { e: Estimate }) {
+  const money = (n: number | null) => (n === null ? '—' : formatCurrency(n))
+  const factors = [e.areaMultiplier && e.areaMultiplier !== 1 ? `superficie ×${e.areaMultiplier}` : null, e.propertyTypeMultiplier && e.propertyTypeMultiplier !== 1 ? `type ×${e.propertyTypeMultiplier}` : null].filter(Boolean)
+  return (
+    <>
+      <div>
+        <dt>Prix de base</dt>
+        <dd className="num">{money(e.basePrice)}</dd>
+      </div>
+      {factors.length > 0 && (
+        <div>
+          <dt>Service ajusté ({factors.join(', ')})</dt>
+          <dd className="num">{money(e.servicePrice)}</dd>
+        </div>
+      )}
+      {e.addOns.map((a) => (
+        <div key={a.id}>
+          <dt>{a.labelFr || ADD_ONS.find((x) => x.id === a.id)?.label || a.id}</dt>
+          <dd className="num">{formatCurrency(a.price)}</dd>
+        </div>
+      ))}
+      {e.discountRate > 0 && (
+        <div>
+          <dt>Rabais fréquence ({Math.round(e.discountRate * 100)} %)</dt>
+          <dd className="num">{e.discountAmount === null ? '—' : `−${formatCurrency(e.discountAmount)}`}</dd>
+        </div>
+      )}
+      <div>
+        <dt>Sous-total</dt>
+        <dd className="num">{money(e.subtotal)}</dd>
+      </div>
+      <div>
+        <dt>Taxes (TPS + TVQ)</dt>
+        <dd className="num">{money(e.taxes)}</dd>
+      </div>
+      <div className="total">
+        <dt>Total par visite</dt>
+        <dd className="num">{money(e.total)}</dd>
+      </div>
+      {e.requiresQuote && <div className="xs muted span">Plus de 2 500 pi² : prix confirmé après une visite (soumission).</div>}
     </>
   )
 }

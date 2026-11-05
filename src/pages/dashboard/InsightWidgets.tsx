@@ -50,8 +50,7 @@ export function FunnelWidget({ range, className }: { range: DateRange; className
               )
             })}
             <li className="funnel-total xs muted">
-              <span />
-              <span>taux global : {f.dials ? formatPercent(f.won / f.dials, 1) : '—'} des appels deviennent des contrats</span>
+              <span>Taux global : {f.dials ? formatPercent(f.won / f.dials, 1) : '—'} des appels deviennent des contrats.</span>
             </li>
           </ol>
         )

@@ -462,8 +462,8 @@ export interface ScriptUpsert {
 // ---- Addendum 3: targets, today, team
 
 export interface UserTargets {
-  dailyCallTarget: number
-  dailyConversationTarget: number
+  callTarget: number
+  conversationTarget: number
 }
 
 export interface TodayStats {
@@ -555,21 +555,26 @@ export interface EstimateInput {
   frequency: string
 }
 
+/** Amounts are null when `requiresQuote` (area over 2 500 sq ft). post_construction is not bookable → 400. */
 export interface Estimate {
-  base: number
-  areaMultiplier: number
-  areaAdjustment: number
-  propertyTypeMultiplier: number
-  propertyTypeAdjustment: number
-  addOns: { id: string; name: string; price: number }[]
-  addOnsTotal: number
-  beforeDiscount: number
+  service: ServiceId
+  basePrice: number | null
+  area: AreaRange | null
+  areaMultiplier: number | null
+  propertyType: PropertyType | null
+  propertyTypeMultiplier: number | null
+  frequency: string
   discountRate: number
-  discount: number
-  subtotal: number
-  taxes: number
-  total: number
-  quoteRequired: boolean
+  addOns: { id: string; labelFr: string; labelEn: string; price: number }[]
+  addOnsTotal: number
+  /** base × area × property type */
+  servicePrice: number | null
+  discountAmount: number | null
+  subtotal: number | null
+  taxes: number | null
+  total: number | null
+  currency: 'CAD'
+  requiresQuote: boolean
 }
 
 export interface SendEmailRequest {
@@ -632,7 +637,7 @@ export interface LiveEventMap {
     at: string
   }
   'lead.updated': { leadId: string; leadStatus: LeadStatus; nextFollowUpAt: string | null }
-  'target.progress': { userId: string; callsToday: number; conversationsToday: number; target: number }
+  'target.progress': { userId: string; callsToday: number; conversationsToday: number; target: number; conversationTarget?: number }
   'tender.updated': { tenderId: string; status: TenderStatus }
 }
 

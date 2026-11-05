@@ -141,8 +141,8 @@
 .snooze-menu {
   position: absolute;
   z-index: 20;
-  bottom: calc(100% + 6px);
-  left: 0;
+  top: calc(100% + 6px);
+  right: 0;
   min-width: 260px;
   background: var(--card);
   border-radius: var(--r-control);
@@ -190,8 +190,8 @@
   font-size: var(--text-sm);
 }
 
-/* Script bottom sheet + floating button (narrow screens) */
-.script-fab {
+/* Script bottom sheet + its opener (narrow screens) */
+.script-bar {
   display: none;
 }
 .hide-narrow {
@@ -241,25 +241,31 @@
     flex-direction: column;
     gap: 14px;
   }
-  .script-fab {
-    position: fixed;
-    right: 16px;
-    bottom: calc(76px + env(safe-area-inset-bottom));
-    z-index: 24;
-    display: inline-flex;
+  /* One thumb tap, in the flow right above the outcomes, nothing floating over them. */
+  .script-bar {
+    display: flex;
     align-items: center;
-    gap: 8px;
-    height: 44px;
+    gap: 10px;
+    width: 100%;
+    min-height: 52px;
     padding: 0 16px;
-    border-radius: 999px;
-    border: 1px solid var(--hairline-strong);
-    background: var(--card);
-    color: var(--ink);
     font: inherit;
-    font-weight: 600;
-    font-size: var(--text-sm);
-    box-shadow: var(--float);
+    color: var(--ink);
+    text-align: left;
     cursor: pointer;
+  }
+  .script-bar svg:first-child {
+    color: var(--deep);
+    flex: none;
+  }
+  .script-bar-label {
+    font-weight: 600;
+    font-size: var(--text-md);
+    white-space: nowrap;
+  }
+  .script-bar .truncate {
+    flex: 1;
+    min-width: 0;
   }
   .sheet.script-sheet {
     max-height: 82vh;
@@ -281,15 +287,24 @@
     max-height: 56vh;
   }
 }
-@media (min-width: 861px) and (max-width: 1080px) {
-  .script-fab {
-    bottom: 24px;
-  }
-}
 @media (max-width: 560px) {
+  /* Phone header: title line, then the ring and the session button on one row. */
   .call-page .page-header {
     margin-bottom: 12px;
-    gap: 8px;
+    gap: 8px 12px;
+  }
+  .call-head .call-title {
+    flex-basis: 100%;
+  }
+  .call-head .spacer {
+    display: none;
+  }
+  .call-head .today {
+    flex: 1;
+    min-width: 0;
+  }
+  .call-head .btn {
+    margin-left: auto;
   }
   .call-head .subtitle {
     font-size: var(--text-sm);
@@ -307,10 +322,6 @@
   }
   .call-timer-clock {
     font-size: var(--text-xl);
-  }
-  .snooze-menu {
-    left: auto;
-    right: 0;
   }
   .open-now .btn {
     margin-left: 0;

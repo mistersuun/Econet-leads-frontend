@@ -43,7 +43,7 @@ describe('openStatus', () => {
     expect(openStatus('Clinique médicale', satOct10_12h).open).toBe(true)
     const cpe = openStatus('CPE', satOct10_12h)
     expect(cpe.open).toBe(false)
-    expect(cpe.suggestionLabel).toBe('lundi 9 h')
+    expect(cpe.suggestionLabel).toBe('lundi 7 h')
   })
 
   it('restaurants are open Sunday afternoon and 14–17 h is the best window', () => {

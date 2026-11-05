@@ -23,8 +23,8 @@ export function OpenNow({ businessType, onSnooze, disabled }: OpenNowProps) {
       <span className="dot" aria-hidden="true" />
       <span className="open-now-label">{s.label}</span>
       {s.suggestion && (
-        <button type="button" className="btn btn-ghost btn-sm" disabled={disabled} onClick={() => onSnooze(s.suggestion!, s.open ? 'Heure peu propice' : 'Fermé à cette heure')}>
-          <IconClock size={14} /> Reporter à {s.suggestionLabel}
+        <button type="button" className="btn btn-ghost btn-sm" disabled={disabled} onClick={() => onSnooze(s.suggestion!, s.open ? 'Heure peu propice' : 'Fermé à cette heure')} title={`Reporter à ${s.suggestionLabel}`}>
+          <IconClock size={14} /> Reporter · {s.suggestionLabel}
         </button>
       )}
     </div>
@@ -35,10 +35,11 @@ interface SnoozeProps {
   onSnooze: (until: Date, reason: string) => void
   disabled?: boolean
   pending?: boolean
+  size?: 'sm' | 'lg'
 }
 
 /** Snooze menu: later today, tomorrow 9 h, or pick a time. */
-export function SnoozeMenu({ onSnooze, disabled, pending }: SnoozeProps) {
+export function SnoozeMenu({ onSnooze, disabled, pending, size = 'lg' }: SnoozeProps) {
   const [open, setOpen] = useState(false)
   const [custom, setCustom] = useState('')
   const ref = useRef<HTMLDivElement>(null)
@@ -66,8 +67,8 @@ export function SnoozeMenu({ onSnooze, disabled, pending }: SnoozeProps) {
 
   return (
     <div className="snooze" ref={ref}>
-      <button type="button" className="btn btn-lg" disabled={disabled || pending} onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} title="Reporter ce lead sans enregistrer d’appel">
-        <IconClock size={18} /> {pending ? 'Report…' : 'Reporter'} <IconChevronDown size={14} className="muted" />
+      <button type="button" className={`btn btn-${size}`} disabled={disabled || pending} onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} title="Reporter ce lead sans enregistrer d’appel">
+        <IconClock size={size === 'sm' ? 14 : 18} /> {pending ? 'Report…' : 'Reporter'} <IconChevronDown size={14} className="muted" />
       </button>
       {open && (
         <div className="snooze-menu" role="menu">

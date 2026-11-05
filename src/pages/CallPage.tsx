@@ -18,7 +18,7 @@ import { TodayRing } from '../components/call/TodayRing'
 import { SessionBar } from '../components/session/SessionBar'
 import { SessionModal } from '../components/session/SessionModal'
 import { SessionSummary } from '../components/session/SessionSummary'
-import { IconCheck, IconChevronDown, IconMail, IconPhone, IconPlay, IconRefresh, IconScript, IconSkip, IconX } from '../components/icons'
+import { IconCheck, IconChevronDown, IconChevronUp, IconMail, IconPhone, IconPlay, IconRefresh, IconScript, IconSkip, IconX } from '../components/icons'
 import { useCallTimer } from '../hooks/useCallTimer'
 import { useLiveEvent } from '../live/LiveProvider'
 import {
@@ -101,7 +101,14 @@ export default function CallPage() {
     if (pinned.data && !done(pinned.data.id) && pinned.data.phone) return [pinned.data, ...list]
     return list
   }, [queue.data, pinned.data, pinnedId, done])
-  const lead = remaining[0]
+  // Pin the lead on screen: a background queue refresh (teammate activity, priorities
+  // moving) must never swap the business the caller is talking to.
+  const [stickyId, setStickyId] = useState<string | null>(null)
+  const lead = remaining.find((l) => l.id === stickyId) ?? remaining[0]
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- follow whatever is now first (after an advance or a refetch that dropped the pinned lead)
+    if (lead?.id !== stickyId) setStickyId(lead?.id ?? null)
+  }, [lead?.id, stickyId])
 
   // When the local copy of the queue runs out, fetch a fresh one from the server (once per batch).
   useEffect(() => {
@@ -408,14 +415,17 @@ function ActiveLead({ lead, readOnly, paused, callerName, onLogged, onSkip, onCl
               <button type="button" className="btn btn-sm" onClick={() => setComposer(true)} disabled={readOnly}>
                 <IconMail size={15} /> Envoyer un courriel
               </button>
-              {narrow && (
-                <button type="button" className="btn btn-sm" onClick={() => setScriptSheet(true)}>
-                  <IconScript size={15} /> Script
-                </button>
-              )}
             </div>
           </div>
 
+          {narrow && (
+            <button type="button" className="card script-bar" onClick={() => setScriptSheet(true)} aria-haspopup="dialog" aria-expanded={scriptSheet}>
+              <IconScript size={18} />
+              <span className="script-bar-label">Script d’appel</span>
+              <span className="xs muted truncate">{language === 'fr' ? 'FR' : 'EN'} · Ouverture, questions, objections, clôture</span>
+              <IconChevronUp size={16} className="muted" />
+            </button>
+          )}
           {narrow && (
             <div className="card card-pad call-outcome-card">
               {timerBlock}
@@ -433,10 +443,10 @@ function ActiveLead({ lead, readOnly, paused, callerName, onLogged, onSkip, onCl
                 onLogged={(res) => onLogged(res, durationRef.current)}
                 extraActions={
                   <>
-                    <button type="button" className="btn btn-lg" onClick={onSkip} title="Passer au lead suivant sans enregistrer">
-                      <IconSkip size={18} /> Passer
+                    <button type="button" className="btn btn-sm" onClick={onSkip} title="Passer au lead suivant sans enregistrer">
+                      <IconSkip size={14} /> Passer
                     </button>
-                    <SnoozeMenu onSnooze={doSnooze} disabled={disabled} pending={snooze.isPending} />
+                    <SnoozeMenu size="sm" onSnooze={doSnooze} disabled={disabled} pending={snooze.isPending} />
                   </>
                 }
               />
@@ -485,10 +495,10 @@ function ActiveLead({ lead, readOnly, paused, callerName, onLogged, onSkip, onCl
               onLogged={(res) => onLogged(res, durationRef.current)}
               extraActions={
                 <>
-                  <button type="button" className="btn btn-lg" onClick={onSkip} title="Passer au lead suivant sans enregistrer">
-                    <IconSkip size={18} /> Passer
+                  <button type="button" className="btn btn-sm" onClick={onSkip} title="Passer au lead suivant sans enregistrer">
+                    <IconSkip size={14} /> Passer
                   </button>
-                  <SnoozeMenu onSnooze={doSnooze} disabled={disabled} pending={snooze.isPending} />
+                  <SnoozeMenu size="sm" onSnooze={doSnooze} disabled={disabled} pending={snooze.isPending} />
                 </>
               }
             />
@@ -510,11 +520,6 @@ function ActiveLead({ lead, readOnly, paused, callerName, onLogged, onSkip, onCl
             <ScriptPanel businessType={lead.businessType} language={language} onLanguageChange={setLanguage} values={placeholders} hotkeys={false} />
           </div>
         </>
-      )}
-      {narrow && !scriptSheet && (
-        <button type="button" className="script-fab" onClick={() => setScriptSheet(true)} aria-label="Ouvrir le script">
-          <IconScript size={18} /> Script
-        </button>
       )}
 
       {composer && (

@@ -15,7 +15,7 @@ const WEEKDAYS = [1, 2, 3, 4, 5]
 
 const RULES: { match: RegExp; rule: HoursRule }[] = [
   { match: /bureau|office|cabinet|notaire|avocat|comptable|assurance|courtier|architecte|ing[ée]nieur/i, rule: { days: WEEKDAYS, open: 8, close: 17, label: 'Bureau · lun–ven 8 h–17 h' } },
-  { match: /cpe|garderie|daycare|centre de la petite enfance/i, rule: { days: WEEKDAYS, open: 7, close: 18, best: [9, 11], label: 'CPE / garderie · lun–ven 7 h–18 h' } },
+  { match: /cpe|garderie|daycare|centre de la petite enfance/i, rule: { days: WEEKDAYS, open: 7, close: 18, label: 'CPE / garderie · lun–ven 7 h–18 h' } },
   { match: /clinique|clinic|dentaire|m[ée]dical|gmf|polyclinique|chsld|pharmacie|sant[ée]/i, rule: { days: [1, 2, 3, 4, 5, 6], open: 8, close: 20, label: 'Clinique · lun–sam 8 h–20 h' } },
   { match: /restaurant|resto|bistro|caf[ée]|brasserie|taverne|sushi|pizz/i, rule: { days: [2, 3, 4, 5, 6, 7], open: 11, close: 22, best: [14, 17], label: 'Restaurant · mar–dim 11 h–22 h, idéalement 14 h–17 h' } },
 ]

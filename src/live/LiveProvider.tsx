@@ -106,7 +106,13 @@ export function useLiveInvalidate(): void {
         if (e.data.userId === me) {
           qc.setQueryData<TodayStats>(['today', 'me'], (old) =>
             old
-              ? { ...old, callsToday: e.data.callsToday, conversationsToday: e.data.conversationsToday, callTarget: e.data.target || old.callTarget }
+              ? {
+                  ...old,
+                  callsToday: e.data.callsToday,
+                  conversationsToday: e.data.conversationsToday,
+                  callTarget: e.data.target || old.callTarget,
+                  conversationTarget: e.data.conversationTarget ?? old.conversationTarget,
+                }
               : old,
           )
           invalidate(['today'])

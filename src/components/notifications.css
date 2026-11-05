@@ -132,11 +132,7 @@
 }
 .notif-actions {
   display: flex;
-  flex-direction: column;
   gap: 4px;
   flex: none;
-  align-items: stretch;
-}
-.notif-actions .btn {
-  justify-content: flex-start;
+  align-items: center;
 }

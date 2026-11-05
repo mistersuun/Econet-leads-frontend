@@ -112,11 +112,11 @@ export function LeadCard({ lead, compact, onCall }: LeadCardProps) {
             </span>
           </dd>
         </div>
-        <div>
+        <div className="fact-secondary">
           <dt>Assigné à</dt>
           <dd className="truncate">{lead.assignedToName ?? <span className="muted">Personne</span>}</dd>
         </div>
-        <div>
+        <div className="fact-secondary">
           <dt>Qualité</dt>
           <dd>
             <QualityMeter score={lead.dataQualityScore} />

@@ -80,19 +80,19 @@ export function SessionSummary({ session, onClose }: Props) {
           </div>
 
           {sum.outcomes.length > 0 ? (
-            <ul className="hbars compact" aria-label="Résultats de la session">
+            <ul className="sum-bars" aria-label="Résultats de la session">
               {sum.outcomes.map((o) => {
                 const meta = OUTCOME_META[o.outcome]
                 return (
-                  <li key={o.outcome} className="hbar-row static">
-                    <span className="hbar-label">
-                      <span className="swatch" style={{ background: meta.color, borderRadius: '50%' }} />
+                  <li key={o.outcome}>
+                    <span className="sum-label">
+                      <span className="swatch" style={{ background: meta.color }} />
                       {meta.label}
                     </span>
-                    <span className="hbar-track">
-                      <span className="hbar-fill" style={{ width: `${(o.count / max) * 100}%`, background: meta.color }} />
+                    <span className="sum-track">
+                      <span className="sum-fill" style={{ width: `${(o.count / max) * 100}%`, background: meta.color }} />
                     </span>
-                    <span className="hbar-value num">{o.count}</span>
+                    <span className="sum-value num">{o.count}</span>
                   </li>
                 )
               })}

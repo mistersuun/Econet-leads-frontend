@@ -36,11 +36,11 @@ function Body({ text }: { text: string }) {
     <>
       {blocks.map((b, i) => {
         const lines = b.split('\n')
-        if (lines.every((l) => /^[-•*]\s/.test(l))) {
+        if (lines.length > 1 && lines.every((l) => /^([-•*]|\d+[.)])\s/.test(l))) {
           return (
             <ul key={i} className="script-list">
               {lines.map((l, j) => (
-                <li key={j}>{l.replace(/^[-•*]\s/, '')}</li>
+                <li key={j}>{l.replace(/^([-•*]|\d+[.)])\s/, '')}</li>
               ))}
             </ul>
           )

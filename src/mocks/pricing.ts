@@ -10,11 +10,11 @@ export const SERVICE_PRICES: Record<ServiceId, { from: number; bookable: boolean
 }
 
 export const ADD_ONS = [
-  { id: 'windows', name: 'Fenêtres', price: 30 },
-  { id: 'oven', name: 'Four', price: 25 },
-  { id: 'fridge', name: 'Réfrigérateur', price: 35 },
-  { id: 'basement', name: 'Sous-sol', price: 50 },
-  { id: 'garage', name: 'Garage', price: 40 },
+  { id: 'windows', labelFr: 'Fenêtres', labelEn: 'Windows', price: 30 },
+  { id: 'oven', labelFr: 'Four', labelEn: 'Oven', price: 25 },
+  { id: 'fridge', labelFr: 'Réfrigérateur', labelEn: 'Fridge', price: 35 },
+  { id: 'basement', labelFr: 'Sous-sol', labelEn: 'Basement', price: 50 },
+  { id: 'garage', labelFr: 'Garage', labelEn: 'Garage', price: 40 },
 ]
 
 export const FREQUENCY_DISCOUNTS: Record<string, number> = {
@@ -47,49 +47,50 @@ function cents(n: number): number {
 
 /**
  * (base × area × propertyType + add-ons) × (1 − frequency discount),
- * rounded to the dollar, then QC taxes (rounded to the dollar).
+ * rounded to the dollar, then QC taxes (rounded to the dollar). Same response
+ * shape as the backend's PricingService: null amounts when a quote is required.
  */
 export function estimatePrice(input: EstimateInput): Estimate {
-  const base = input.service ? SERVICE_PRICES[input.service]?.from ?? 0 : 0
+  const service = (input.service || 'commercial') as Estimate['service']
+  const base = SERVICE_PRICES[service]?.from ?? 0
   const areaValue = input.area ? AREA_MULTIPLIERS[input.area] : 1
-  const quoteRequired = areaValue === null
-  const areaMultiplier = areaValue ?? 1
+  const requiresQuote = areaValue === null
+  const areaMultiplier = areaValue ?? null
   const propertyTypeMultiplier = input.propertyType ? PROPERTY_TYPE_MULTIPLIERS[input.propertyType] ?? 1 : 1
-
-  const sized = base * areaMultiplier
-  const adjusted = sized * propertyTypeMultiplier
   const addOns = ADD_ONS.filter((a) => input.addOnIds.includes(a.id))
   const addOnsTotal = addOns.reduce((sum, a) => sum + a.price, 0)
-  const beforeDiscount = adjusted + addOnsTotal
   const discountRate = FREQUENCY_DISCOUNTS[input.frequency] ?? 0
-  const subtotal = Math.round(beforeDiscount * (1 - discountRate))
-  const taxes = Math.round(subtotal * QC_TAX_RATE)
-
-  return {
-    base,
+  const common = {
+    service,
+    basePrice: base,
+    area: input.area || null,
     areaMultiplier,
-    areaAdjustment: cents(sized - base),
+    propertyType: input.propertyType || null,
     propertyTypeMultiplier,
-    propertyTypeAdjustment: cents(adjusted - sized),
+    frequency: input.frequency,
+    discountRate,
     addOns,
     addOnsTotal,
-    beforeDiscount: cents(beforeDiscount),
-    discountRate,
-    discount: cents(beforeDiscount * discountRate),
-    subtotal,
-    taxes,
-    total: subtotal + taxes,
-    quoteRequired,
+    currency: 'CAD' as const,
+    requiresQuote,
   }
+  if (requiresQuote) return { ...common, servicePrice: null, discountAmount: null, subtotal: null, taxes: null, total: null }
+  const servicePrice = cents(base * (areaMultiplier ?? 1) * propertyTypeMultiplier)
+  const beforeDiscount = servicePrice + addOnsTotal
+  const subtotal = Math.round(beforeDiscount * (1 - discountRate))
+  const taxes = Math.round(subtotal * QC_TAX_RATE)
+  return { ...common, servicePrice, discountAmount: Math.round(beforeDiscount * discountRate), subtotal, taxes, total: subtotal + taxes }
 }
 
 export function pricingTables() {
   return {
-    services: SERVICE_PRICES,
+    servicePrices: Object.fromEntries(Object.entries(SERVICE_PRICES).map(([k, v]) => [k, v.from])),
     addOns: ADD_ONS,
+    addOnPrices: Object.fromEntries(ADD_ONS.map((a) => [a.id, a.price])),
     frequencyDiscounts: FREQUENCY_DISCOUNTS,
     areaMultipliers: AREA_MULTIPLIERS,
     propertyTypeMultipliers: PROPERTY_TYPE_MULTIPLIERS,
     taxRate: QC_TAX_RATE,
+    notBookable: Object.entries(SERVICE_PRICES).filter(([, v]) => !v.bookable).map(([k]) => k),
   }
 }

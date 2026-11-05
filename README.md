@@ -3,9 +3,40 @@
 Internal web app for EcoNet (commercial cleaning, Montréal) to work through Québec
 businesses imported from open data, cold-call them, and track performance.
 
-- **Appeler** (`/call`): prioritised call queue, one lead at a time, one-tap outcomes
-  (keyboard shortcuts 1–9, Ctrl/⌘+Enter to save), follow-up scheduling, call history.
-  Works well on a phone.
+- **Appeler** (`/call`): the caller's workbench, built to stay open all morning. Three zones
+  that fit 1440×900 without page scroll: lead card + **qualification** (decision maker, role,
+  direct line, email, current provider, contract end, size, employees, frequency wanted,
+  pain-point chips, language, best time to call — saved on blur and with the call) +
+  history; a **script panel** per business type and language (Ouverture / Questions /
+  Objections / Clôture, placeholders filled in, objections as expandable rows, FR/EN switch
+  persisted per lead, keys `O` `Q` `B` `C`); outcomes (keys 1–9, Ctrl/⌘+Enter) with a
+  **call timer** ("Appel lancé" or tapping the number; duration saved with the call), an
+  "Ouvert maintenant ?" line from business hours in America/Montreal with a one-click
+  snooze, and a **Reporter** menu (+3 h, demain 9 h, choisir…). The header shows today's ring
+  (calls / target), conversations / target, streak and rank, updated live. Leads are
+  **claimed** while on screen (refreshed every 4 min, released on leave; a 409 shows
+  "X est déjà sur ce lead" and moves on; teammates' claims drop leads from the local queue).
+  **Session mode**: "Démarrer une session" → filters (types, villes, sources, nouveaux /
+  suivis, qualité min.), 10/25/50 leads, optional conversation target, slim progress bar with
+  pause/resume, end-of-session summary (dials, connects, conversations, outcome mix, average
+  call length, best positive streak) with "Copier le résumé"; kept in localStorage so a
+  reload resumes. **Envoyer un courriel** opens the composer (below).
+  On a phone (callers dial on their cell) the number is the primary control: tapping it
+  starts the timer, outcomes sit right under it in two columns, qualification collapses,
+  and the script is a bottom sheet.
+- **Courriel** (composer drawer, from the call screen and the lead drawer): template
+  (présentation, suivi de devis, confirmation de visite, tentative d'appel), language,
+  recipient, optional itemised estimate (same inputs as the website's booking form, priced by
+  `POST /api/pricing/estimate`), optional visit date (adds an ICS), extra note, debounced live
+  preview, send. When SMTP is not configured the Send button is replaced by a banner naming
+  the env vars. Sent emails appear in the history as "Courriel".
+- **En direct**: one `EventSource` on `/api/events` (token in the query string, auto-reconnect
+  with token refresh). Sidebar footer shows teammate presence ("en appel · CPE X" / "en
+  ligne"), the dashboard has a live activity feed and its tiles refresh on events, a toast
+  announces a teammate's won contract, and the call queue reacts to claims.
+- **Notifications**: bell in the sidebar (polls `/api/notifications` every 60 s) with a panel
+  ("Appeler" / "Ouvrir"); browser alerts for new follow-ups are offered from the bell, never
+  on load.
 - **Leads** (`/leads`): server-side paged/sorted table, filters synced to the URL,
   CSV export, detail drawer (`/leads/:id`) with status change, value/assignee, timeline
   and "Appeler maintenant".
@@ -21,11 +52,17 @@ businesses imported from open data, cold-call them, and track performance.
   closing date with a countdown (red under 3 days), inline status, link to the notice,
   and a drawer (`/tenders/:id`) with status and notes (saved on blur or ⌘/Ctrl+Enter).
   Awarded SEAO contracts show their end / renewal date instead of a closing date.
-- **Tableau de bord** (`/`): KPIs with comparison to the previous period, activity,
-  pipeline, call outcomes, breakdown by type/city/source, team leaderboard.
+- **Tableau de bord** (`/`): KPIs with comparison to the previous period, activity, live feed,
+  funnel (dials → connects → conversations → intéressés → devis → gagnés with stage-to-stage
+  rates), best-hours heatmap (Mon–Fri × 8–18, one sequential green scale), team today with
+  live status, pipeline, call outcomes, leaderboard, conversion by type (what the queue
+  learned), breakdown by type/city/source.
 - **Sources** (`/sources`, ADMIN): data sources, imports and job history (polls every 3 s
   while a job runs). The business register (`BULK_FILE`) also takes "Importer un fichier":
   the official ZIP (~225 MB) is uploaded with a progress bar, then imported server-side.
+- **Réglages** (`/settings`, ADMIN): call scripts by type and language (section editor with
+  placeholder help), email templates (subject/body), daily call and conversation targets per
+  agent.
 
 The UI is in French. It talks to the Spring Boot backend (`Econet-leads-backend`); the
 API contract it is built against lives in the backend repo / project docs. Types in
@@ -33,12 +70,16 @@ API contract it is built against lives in the backend repo / project docs. Types
 
 | Screen | |
 |---|---|
+| Call screen v2 (timer running, objections open, session) | ![Call v2](docs/screenshots/14-call-v2.png) |
+| Call screen (phone: tap the number, outcomes under the thumb) | ![Call mobile](docs/screenshots/04-call-mobile.png) |
+| Session mode (running, modal, summary) | ![Session](docs/screenshots/15-session.png) |
+| Email composer with estimate | ![Email](docs/screenshots/16-email.png) |
 | Dashboard | ![Dashboard](docs/screenshots/02-dashboard.png) |
-| Call screen | ![Call](docs/screenshots/03-call-desktop.png) |
-| Call screen (mobile) | ![Call mobile](docs/screenshots/04-call-mobile.png) |
+| Dashboard insights (funnel, best hours, live feed) | ![Insights](docs/screenshots/17-dashboard-insights.png) |
+| Réglages (scripts) | ![Settings](docs/screenshots/18-settings.png) |
+| Notifications | ![Notifications](docs/screenshots/19-notifications.png) |
 | À enrichir | ![Enrich](docs/screenshots/11-enrich.png) |
 | Appels d'offres | ![Tenders](docs/screenshots/12-tenders.png) |
-| Tender detail | ![Tender detail](docs/screenshots/13-tender-detail.png) |
 
 More in [`docs/screenshots/`](docs/screenshots/).
 
@@ -93,6 +134,14 @@ call queue; numbers in the fictional 555-01xx range are rejected by the mock ser
 inline server-error state can be seen. ZIP uploads are simulated with progress.
 State is kept in memory, so logging a call updates the queue, follow-ups and dashboard;
 it resets on page reload. Token expiry (15 min) and refresh are simulated too.
+Addendum 3 is mocked as well: claims with TTL, qualification, FR/EN scripts and email
+templates, the website's pricing formula, email preview/send (status `configured: true`),
+notifications, funnel / best hours / team today / conversion by type, targets. A fake
+`EventSource` on `/api/events` sends presence on connect, closes when the token expires
+(exercising the refresh-and-reconnect path), and a simulated teammate claims a lead and logs
+a call every ~20 s (sometimes a lead from your own queue, which then disappears from it).
+Right after a queue fetch, your first claim silently hands the following lead to that
+teammate so the 409 "déjà sur ce lead" path shows up (three times at most).
 
 Demo accounts: `admin` / `admin` (ADMIN), `marie.lavoie` / `demo` and `julien.roy` /
 `demo` (USER), `lecteur` / `demo` (VIEWER, read-only).
@@ -110,7 +159,7 @@ emitted in production builds.
 | `npm run build` | `tsc -b` (strict type-check) then `vite build` into `dist/` |
 | `npm run preview` | Serve `dist/` locally on :5173 |
 | `npm run lint` | ESLint (flat config, typescript-eslint, react-hooks) |
-| `npm test` | Vitest unit tests (API client refresh flow and uploads, formatting, phone formatter/validator, Google search URL, tender helpers) |
+| `npm test` | Vitest unit tests (API client refresh flow and uploads, formatting, phone formatter/validator, Google search URL, tender helpers, business-hours heuristic, placeholder substitution and objection parsing, session-mode math, live-store reducer) |
 
 ## Project layout
 
@@ -119,13 +168,18 @@ src/
   api/          client.ts (fetch wrapper, auth header, {error} parsing, 401 → refresh once → retry),
                 session.ts (tokens in localStorage), endpoints.ts (typed calls), types.ts
   auth/         AuthContext (login/logout, role checks)
-  components/   Layout (sidebar / mobile tab bar), OutcomeForm, LeadCard, CallHistory, Widget, …
-  hooks/        useSavePhone, useUpdateTender (mutations shared by several screens)
+  live/         useEventSource (SSE + reconnect/refresh), store (reducer: presence, last 50 events),
+                LiveProvider (useLive, useLiveEvent, useLiveInvalidate)
+  components/   Layout (sidebar / mobile tab bar), OutcomeForm, LeadCard, CallHistory, Widget,
+                EmailComposer, NotificationsBell, TeamPresence, call/ (QualificationForm, ScriptPanel,
+                TodayRing, OpenNow + SnoozeMenu), session/ (SessionModal, SessionBar, SessionSummary), …
+  hooks/        useSavePhone, useUpdateTender, useCallTimer
   lib/          format.ts (CAD, %, phone, French relative dates), dates.ts, status.ts (fixed colours), leadFilters.ts,
-                phone.ts (live formatting, validation, search link), tenders.ts (status meta, countdown, URL filters)
-  mocks/        dev-only mock backend
-  pages/        one file per screen (+ co-located CSS)
-  styles/       global.css (design tokens)
+                phone.ts (live formatting, validation, search link), tenders.ts (status meta, countdown, URL filters),
+                businessHours.ts (America/Montreal heuristic), placeholders.ts ({{…}} + objection pairs),
+                callSession.ts (session mode state, summary math, localStorage)
+  mocks/        dev-only mock backend (handlers3.ts, live.ts + simulation.ts for SSE, pricing.ts, seedScripts.ts)
+  pages/        one file per screen (+ co-located CSS); dashboard/InsightWidgets.tsx, SettingsPage.tsx
 ```
 
 Auth: tokens are stored in `localStorage`. On a 401 the client calls

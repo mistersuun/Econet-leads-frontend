@@ -14,13 +14,12 @@ import type {
   TenderStatus,
 } from '../api/types'
 import { CALL_OUTCOMES, LEAD_STATUSES, TENDER_SOURCES, TENDER_STATUSES } from '../api/types'
-import { CLAIM_TTL_MS, CONVERSATION_OUTCOMES, TERMINAL, applyCall, createDb, parseLocal, queueFor, startOfDay, type Db } from './db'
+import { CONVERSATION_OUTCOMES, TERMINAL, applyCall, createDb, parseLocal, queueFor, startOfDay, type Db } from './db'
 import { broadcastPresence, emitProgress, handle3 } from './handlers3'
 import { HttpError, type Req, type Result } from './http'
 import { emit } from './live'
 import { USERS, isoLocal, makeLead, mockId, type MockUser } from './seed'
 import { NEW_SOURCE_NAMES, makeImportedTender, makePermitLead, makeRegisterLead } from './seedSources'
-import { teammateFor } from './simulation'
 
 const ACCESS_TTL_MS = 15 * 60_000
 
@@ -325,13 +324,7 @@ export function handle(req: Req): Result {
       newOnly: bool(q, 'newOnly'),
     })
     d.lastQueue.set(user.userId, list.map((l) => l.id))
-    // Once per demo: a teammate silently takes the 4th lead right after this
-    // response (as if the lead.claimed event was missed), so the 409 path shows.
-    if (!d.sneakyClaimDone && list.length > 3 && user.role !== 'VIEWER') {
-      d.sneakyClaimDone = true
-      const mate = teammateFor(user.userId)
-      d.claims.set(list[3].id, { leadId: list[3].id, userId: mate.userId, username: mate.username, expiresAt: now.getTime() + CLAIM_TTL_MS })
-    }
+    d.sneakyPending = user.role !== 'VIEWER'
     return { json: list }
   }
   if ((m = /^\/api\/leads\/([^/]+)\/calls$/.exec(path)) && method === 'POST') {
@@ -582,6 +575,7 @@ export function handle(req: Req): Result {
 export function toResponse(fn: () => Result): Response {
   try {
     const res = fn()
+    if (res.status === 204) return new Response(null, { status: 204 })
     if (res.text !== undefined) {
       return new Response(res.text, { status: res.status ?? 200, headers: { 'Content-Type': res.contentType ?? 'text/plain' } })
     }

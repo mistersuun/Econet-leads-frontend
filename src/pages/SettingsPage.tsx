@@ -120,7 +120,7 @@ function ScriptsTab() {
   const [selected, setSelected] = useState<string | 'new' | null>(null)
   const [lang, setLang] = useState<ScriptLanguage | 'all'>('all')
 
-  const list = (scripts.data ?? []).filter((s) => lang === 'all' || s.language === lang).sort((a, b) => (a.businessType ?? '').localeCompare(b.businessType ?? '', 'fr') || a.language.localeCompare(b.language))
+  const list = (scripts.data ?? []).filter((s) => lang === 'all' || s.language === lang).sort((a, b) => (a.businessType ?? '').localeCompare(b.businessType ?? '', 'fr') || b.language.localeCompare(a.language))
   const editing: CallScript | 'new' | null = selected === 'new' ? 'new' : (scripts.data?.find((s) => s.id === selected) ?? null)
 
   const save = useMutation({
@@ -277,7 +277,7 @@ function EmailsTab() {
   const toast = useToast()
   const q = useQuery({ queryKey: ['email-templates'], queryFn: listEmailTemplates })
   const [selected, setSelected] = useState<string | null>(null)
-  const list = [...(q.data ?? [])].sort((a, b) => TEMPLATE_LABEL[a.key].localeCompare(TEMPLATE_LABEL[b.key], 'fr') || a.language.localeCompare(b.language))
+  const list = [...(q.data ?? [])].sort((a, b) => TEMPLATE_LABEL[a.key].localeCompare(TEMPLATE_LABEL[b.key], 'fr') || b.language.localeCompare(a.language))
   const editing = q.data?.find((t) => t.id === selected) ?? null
   const save = useMutation({
     mutationFn: ({ id, body }: { id: string; body: { subject: string; body: string; active: boolean } }) => updateEmailTemplate(id, body),
@@ -414,7 +414,7 @@ function TargetRow({ userId, username, me, today }: { userId: string; username: 
   const q = useQuery({ queryKey: ['targets', userId], queryFn: () => (me ? getMyTargets() : getUserTargets(userId)), retry: false })
   const [calls, setCalls] = useState<string | null>(null)
   const [conv, setConv] = useState<string | null>(null)
-  const current: UserTargets = q.data ?? { dailyCallTarget: 40, dailyConversationTarget: 6 }
+  const current: UserTargets = q.data ?? { callTarget: 40, conversationTarget: 6 }
   const save = useMutation({
     mutationFn: (body: UserTargets) => (me ? updateMyTargets(body) : updateUserTargets(userId, body)),
     onSuccess: (t) => {
@@ -426,9 +426,9 @@ function TargetRow({ userId, username, me, today }: { userId: string; username: 
     },
     onError: (e) => toast(errorMessage(e), 'error'),
   })
-  const c = calls ?? String(current.dailyCallTarget)
-  const v = conv ?? String(current.dailyConversationTarget)
-  const dirty = Number(c) !== current.dailyCallTarget || Number(v) !== current.dailyConversationTarget
+  const c = calls ?? String(current.callTarget)
+  const v = conv ?? String(current.conversationTarget)
+  const dirty = Number(c) !== current.callTarget || Number(v) !== current.conversationTarget
   return (
     <tr>
       <td>
@@ -446,7 +446,7 @@ function TargetRow({ userId, username, me, today }: { userId: string; username: 
         <input className="input num" style={{ width: 96, height: 36 }} inputMode="numeric" value={v} onChange={(e) => setConv(e.target.value.replace(/\D/g, ''))} aria-label={`Conversations par jour pour ${username}`} />
       </td>
       <td className="num">
-        <button type="button" className="btn btn-sm" disabled={!dirty || save.isPending} onClick={() => save.mutate({ dailyCallTarget: Number(c), dailyConversationTarget: Number(v) })}>
+        <button type="button" className="btn btn-sm" disabled={!dirty || save.isPending} onClick={() => save.mutate({ callTarget: Number(c), conversationTarget: Number(v) })}>
           {save.isPending ? '…' : 'Enregistrer'}
         </button>
       </td>

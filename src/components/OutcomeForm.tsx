@@ -113,8 +113,15 @@ export function OutcomeForm({ lead, disabled, shortcuts, submitLabel = 'Enregist
 
   return (
     <form ref={formRef} className={`outcome-form${compact ? ' compact' : ''}`} onSubmit={submit} aria-disabled={disabled}>
+      {compact && (
+        <div className="outcome-head">
+          <span className="field-label">Résultat de l’appel</span>
+          <span className="spacer" />
+          {extraActions}
+        </div>
+      )}
       <fieldset className="outcomes-grid" disabled={disabled}>
-        <legend className="field-label">Résultat de l’appel</legend>
+        <legend className={compact ? 'sr-only' : 'field-label'}>Résultat de l’appel</legend>
         {CALL_OUTCOMES.map((o, i) => {
           const m = OUTCOME_META[o]
           return (
@@ -207,7 +214,7 @@ export function OutcomeForm({ lead, disabled, shortcuts, submitLabel = 'Enregist
       </div>
 
       <div className="outcome-actions">
-        {extraActions}
+        {!compact && extraActions}
         <span className="spacer" />
         {shortcuts && (
           <span className="submit-hint hide-mobile" aria-hidden="true">

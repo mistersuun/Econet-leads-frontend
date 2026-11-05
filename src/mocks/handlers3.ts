@@ -30,6 +30,7 @@ import {
   parseLocal,
   startOfDay,
   sweepClaims,
+  unknownQualificationKeys,
   type Db,
 } from './db'
 import { renderEmail } from './email'
@@ -38,6 +39,7 @@ import { emit } from './live'
 import { estimatePrice, pricingTables } from './pricing'
 import { USERS, isoLocal, mockId, type MockUser } from './seed'
 import { pickScript } from './seedScripts'
+import { teammateFor } from './simulation'
 
 const NO_CONNECT: CallOutcome[] = ['NO_ANSWER', 'VOICEMAIL', 'WRONG_NUMBER']
 const POSITIVE: CallOutcome[] = ['INTERESTED', 'QUOTE_SENT', 'WON']
@@ -115,8 +117,8 @@ export function todayStats(d: Db, user: MockUser, now: Date): TodayStats {
     conversationsToday: mine.filter((c) => CONVERSATION_OUTCOMES.includes(c.outcome as CallOutcome)).length,
     quotesToday: mine.filter((c) => c.outcome === 'QUOTE_SENT').length,
     wonToday: mine.filter((c) => c.outcome === 'WON').length,
-    callTarget: t.dailyCallTarget,
-    conversationTarget: t.dailyConversationTarget,
+    callTarget: t.callTarget,
+    conversationTarget: t.conversationTarget,
     streakDays: streak,
     bestDayCalls: Math.max(0, ...perDay.values()),
     rankToday: { position, of: Math.max(sorted.length, 1) },
@@ -141,7 +143,7 @@ export function teamToday(d: Db, now: Date): TeamTodayRow[] {
 
 export function emitProgress(d: Db, user: MockUser, now: Date): void {
   const s = todayStats(d, user, now)
-  emit('target.progress', { userId: user.userId, callsToday: s.callsToday, conversationsToday: s.conversationsToday, target: s.callTarget })
+  emit('target.progress', { userId: user.userId, callsToday: s.callsToday, conversationsToday: s.conversationsToday, target: s.callTarget, conversationTarget: s.conversationTarget })
 }
 
 // ---------- notifications
@@ -157,7 +159,7 @@ function notificationsFor(d: Db, user: MockUser, now: Date): AppNotification[] {
     if (t > todayEnd) continue
     const overdue = t < today0
     out.push({
-      id: `n-${overdue ? 'over' : 'due'}-${l.id}`,
+      id: `${overdue ? 'follow_up_overdue' : 'follow_up_due'}:${l.id}`,
       kind: overdue ? 'follow_up_overdue' : 'follow_up_due',
       title: l.businessName,
       body: overdue ? `Suivi en retard depuis le ${t.toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' })}` : `Suivi prévu à ${t.toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })}`,
@@ -170,7 +172,7 @@ function notificationsFor(d: Db, user: MockUser, now: Date): AppNotification[] {
     if (!t.closingAt || (t.status !== 'REVIEWING' && t.status !== 'BIDDING')) continue
     const c = parseLocal(t.closingAt).getTime()
     if (c < now.getTime() || c > soon) continue
-    out.push({ id: `n-tender-${t.id}`, kind: 'tender_closing', title: t.title, body: `Clôture ${new Date(c).toLocaleString('fr-CA', { dateStyle: 'medium', timeStyle: 'short' })} · ${t.buyer}`, tenderId: t.id, at: t.closingAt })
+    out.push({ id: `tender_closing:${t.id}`, kind: 'tender_closing', title: t.title, body: `Clôture ${new Date(c).toLocaleString('fr-CA', { dateStyle: 'medium', timeStyle: 'short' })} · ${t.buyer}`, tenderId: t.id, at: t.closingAt })
   }
   return out.sort((a, b) => a.at.localeCompare(b.at)).slice(0, 40)
 }
@@ -201,6 +203,19 @@ export function handle3(req: Req, d: Db, user: MockUser, now: Date): Result | nu
       const fresh = !held
       const claim = { leadId: lead.id, userId: user.userId, username: user.username, expiresAt: now.getTime() + CLAIM_TTL_MS }
       d.claims.set(lead.id, claim)
+      // Demo of the race the contract describes: right after a queue fetch, a teammate
+      // silently takes the lead that follows this one (as if the lead.claimed event was
+      // missed), so the 409 → "X est déjà sur ce lead" path shows. At most three times.
+      if (fresh && d.sneakyPending && d.sneakyCount < 3) {
+        d.sneakyPending = false
+        const ids = d.lastQueue.get(user.userId) ?? []
+        const nextId = ids[ids.indexOf(lead.id) + 1]
+        if (nextId && !d.claims.has(nextId)) {
+          d.sneakyCount++
+          const mate = teammateFor(user.userId)
+          d.claims.set(nextId, { leadId: nextId, userId: mate.userId, username: mate.username, expiresAt: now.getTime() + CLAIM_TTL_MS })
+        }
+      }
       if (fresh) {
         emit('lead.claimed', { leadId: lead.id, leadName: lead.businessName, userId: user.userId, username: user.username, expiresAt: isoLocal(new Date(claim.expiresAt)) })
         broadcastPresence(d, now)
@@ -224,12 +239,13 @@ export function handle3(req: Req, d: Db, user: MockUser, now: Date): Result | nu
     const lead = findLead(d, m[1])
     const { until, reason } = (req.body ?? {}) as { until?: string; reason?: string }
     if (!until) throw new HttpError(400, 'Date de report requise', { until: 'Requis' })
+    if (parseLocal(until) <= now) throw new HttpError(400, 'La date de report doit être dans le futur', { until: 'Doit être dans le futur' })
     if (!['NEW', 'CONTACTED', 'INTERESTED', 'QUOTE_SENT'].includes(lead.leadStatus)) throw new HttpError(400, 'Ce lead ne peut pas être reporté')
     lead.nextFollowUpAt = until
     lead.updatedAt = isoLocal(now)
     const when = parseLocal(until).toLocaleString('fr-CA', { dateStyle: 'medium', timeStyle: 'short' })
     d.contacts.push({
-      id: mockId('c'), businessId: lead.id, businessName: lead.businessName, contactDate: isoLocal(now), contactType: 'NOTE', contactStatus: 'NOTE',
+      id: mockId('c'), businessId: lead.id, businessName: lead.businessName, contactDate: isoLocal(now), contactType: 'NOTE', contactStatus: 'SNOOZED',
       contactPerson: null, notes: `Reporté au ${when}${reason ? ` — ${reason}` : ''}`, nextAction: 'Rappeler', nextActionDate: until,
       userId: user.userId, username: user.username, outcome: null, createdAt: isoLocal(now),
     })
@@ -249,6 +265,8 @@ export function handle3(req: Req, d: Db, user: MockUser, now: Date): Result | nu
     if (method === 'PATCH') {
       requireRole(user, 'ADMIN', 'USER')
       const body = (req.body ?? {}) as Qualification
+      const unknown = unknownQualificationKeys(body)
+      if (unknown.length) throw new HttpError(400, `Champ inconnu : ${unknown.join(', ')}`)
       if (body.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.email)) throw new HttpError(400, 'Courriel invalide', { email: 'Format invalide' })
       lead.updatedAt = isoLocal(now)
       return { json: mergeQualification(lead, body) }
@@ -361,6 +379,7 @@ export function handle3(req: Req, d: Db, user: MockUser, now: Date): Result | nu
   if (path === '/api/pricing' && method === 'GET') return { json: pricingTables() }
   if (path === '/api/pricing/estimate' && method === 'POST') {
     const body = (req.body ?? {}) as Partial<EstimateInput>
+    if (body.service === 'post_construction') throw new HttpError(400, 'Le nettoyage après construction n’est pas réservable en ligne : soumission requise', { service: 'Non réservable' })
     return { json: estimatePrice({ service: body.service ?? '', area: body.area ?? '', propertyType: body.propertyType ?? '', addOnIds: body.addOnIds ?? [], frequency: body.frequency ?? 'one-time' }) }
   }
   if ((m = /^\/api\/leads\/([^/]+)\/emails(\/preview)?$/.exec(path)) && method === 'POST') {
@@ -368,9 +387,10 @@ export function handle3(req: Req, d: Db, user: MockUser, now: Date): Result | nu
     const lead = findLead(d, m[1])
     const body = (req.body ?? {}) as Partial<SendEmailRequest>
     if (!body.templateKey || !EMAIL_TEMPLATE_KEYS.includes(body.templateKey)) throw new HttpError(400, 'Modèle inconnu', { templateKey: 'Valeur inconnue' })
-    const language: ScriptLanguage = body.language === 'en' ? 'en' : 'fr'
+    const language: ScriptLanguage = body.language === 'en' || body.language === 'fr' ? body.language : (lead.qualification?.language ?? 'fr')
     const template = d.templates.find((t) => t.key === body.templateKey && t.language === language && t.active) ?? d.templates.find((t) => t.key === body.templateKey && t.active)
     if (!template) throw new HttpError(404, 'Aucun modèle actif pour cette langue')
+    if (body.templateKey === 'visit_confirmation' && !body.visitAt) throw new HttpError(400, 'Une date de visite est requise pour ce modèle', { visitAt: 'Requis' })
     const req3: SendEmailRequest = { templateKey: body.templateKey, language, to: body.to, estimate: body.estimate, visitAt: body.visitAt, extraNote: body.extraNote }
     const rendered = renderEmail(template, lead, user.username, req3)
     if (m[2]) return { json: rendered }
@@ -382,7 +402,7 @@ export function handle3(req: Req, d: Db, user: MockUser, now: Date): Result | nu
     sent.push(now.getTime())
     d.emailsSent.set(user.userId, sent)
     const contact = {
-      id: mockId('c'), businessId: lead.id, businessName: lead.businessName, contactDate: isoLocal(now), contactType: 'EMAIL' as const, contactStatus: 'ENVOYE',
+      id: mockId('c'), businessId: lead.id, businessName: lead.businessName, contactDate: isoLocal(now), contactType: 'EMAIL' as const, contactStatus: 'EMAIL_SENT',
       contactPerson: to, notes: `${rendered.subject}\n\n${rendered.body}`, nextAction: null, nextActionDate: null,
       userId: user.userId, username: user.username, outcome: null, createdAt: isoLocal(now), durationSeconds: null,
     }
@@ -412,9 +432,9 @@ function validateScript(raw: unknown): ScriptUpsert {
 
 function validateTargets(raw: unknown): UserTargets {
   const b = (raw ?? {}) as Partial<UserTargets>
-  const calls = Number(b.dailyCallTarget)
-  const conv = Number(b.dailyConversationTarget)
-  if (!Number.isInteger(calls) || calls < 1 || calls > 500) throw new HttpError(400, 'Objectif d’appels invalide (1–500)', { dailyCallTarget: 'Entre 1 et 500' })
-  if (!Number.isInteger(conv) || conv < 0 || conv > 100) throw new HttpError(400, 'Objectif de conversations invalide (0–100)', { dailyConversationTarget: 'Entre 0 et 100' })
-  return { dailyCallTarget: calls, dailyConversationTarget: conv }
+  const calls = Number(b.callTarget)
+  const conv = Number(b.conversationTarget)
+  if (!Number.isInteger(calls) || calls < 1 || calls > 500) throw new HttpError(400, 'Objectif d’appels invalide (1–500)', { callTarget: 'Entre 1 et 500' })
+  if (!Number.isInteger(conv) || conv < 1 || conv > 500) throw new HttpError(400, 'Objectif de conversations invalide (1–500)', { conversationTarget: 'Entre 1 et 500' })
+  return { callTarget: calls, conversationTarget: conv }
 }

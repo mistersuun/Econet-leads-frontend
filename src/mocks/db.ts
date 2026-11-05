@@ -63,12 +63,13 @@ export interface Db {
   templates: EmailTemplate[]
   /** Lead ids last served by /api/leads/queue, per user (the simulation picks from here). */
   lastQueue: Map<string, string[]>
-  /** One-off: a lead silently claimed by a teammate to exercise the 409 path. */
-  sneakyClaimDone: boolean
+  /** Demo of the 409 path: after each queue fetch, the first claim silently hands the next lead to a teammate (3× max). */
+  sneakyPending: boolean
+  sneakyCount: number
   emailsSent: Map<string, number[]>
 }
 
-export const DEFAULT_TARGETS: UserTargets = { dailyCallTarget: 40, dailyConversationTarget: 6 }
+export const DEFAULT_TARGETS: UserTargets = { callTarget: 40, conversationTarget: 6 }
 
 export function sweepClaims(db: Db, now: Date): void {
   for (const [id, c] of db.claims) if (c.expiresAt <= now.getTime()) db.claims.delete(id)
@@ -84,14 +85,22 @@ export function claimOf(db: Db, leadId: string, now: Date): Claim | null {
   return c
 }
 
+const QUALIFICATION_KEYS = ['decisionMaker', 'role', 'directPhone', 'email', 'currentProvider', 'contractEndsAt', 'sizeSqft', 'employees', 'frequencyWanted', 'painPoints', 'language', 'bestTimeToCall', 'notes']
+
+/** PATCH semantics: merge; null or blank removes the key; unknown keys are rejected by the caller. */
 export function mergeQualification(lead: BusinessDTO, patch: Qualification): Qualification {
   const next: Record<string, unknown> = { ...(lead.qualification ?? {}) }
   for (const [k, v] of Object.entries(patch)) {
     if (v === undefined) continue
-    next[k] = v
+    if (v === null || (typeof v === 'string' && !v.trim()) || (Array.isArray(v) && v.length === 0)) delete next[k]
+    else next[k] = typeof v === 'string' ? v.trim() : v
   }
-  lead.qualification = next as Qualification
-  return lead.qualification
+  lead.qualification = Object.keys(next).length ? (next as Qualification) : null
+  return lead.qualification ?? {}
+}
+
+export function unknownQualificationKeys(patch: object): string[] {
+  return Object.keys(patch).filter((k) => !QUALIFICATION_KEYS.includes(k))
 }
 
 /** Observed conversion by business type over the last 180 days, Laplace-smoothed (contract §3). */
@@ -302,7 +311,8 @@ export function createDb(now: Date = new Date()): Db {
     scripts: makeScripts(now),
     templates: makeEmailTemplates(),
     lastQueue: new Map(),
-    sneakyClaimDone: false,
+    sneakyPending: false,
+    sneakyCount: 0,
     emailsSent: new Map(),
   }
 

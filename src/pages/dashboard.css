@@ -473,8 +473,8 @@ a.hbar-row:hover {
   text-align: right;
   font-size: var(--text-sm);
 }
-.funnel-total {
-  grid-template-columns: 104px 1fr;
+.funnel li.funnel-total {
+  grid-template-columns: 1fr;
   border-top: 1px solid var(--hairline);
   margin-top: 4px;
   padding-top: 10px;
@@ -522,6 +522,9 @@ a.hbar-row:hover {
   transform: translate(-50%, calc(-100% - 8px));
   pointer-events: none;
   z-index: 5;
+}
+.heat-tip .chart-tip-title {
+  text-transform: none;
 }
 .heat-foot {
   display: flex;
