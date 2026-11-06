@@ -27,6 +27,8 @@ function isActivity(e: LiveEvent): e is ActivityEvent {
 function pushActivity(list: ActivityEvent[], e: ActivityEvent): ActivityEvent[] {
   // Replays after a reconnect can resend an id we already have.
   if (e.id && list.some((x) => x.id === e.id)) return list
+  // The backend re-broadcasts lead.claimed when a claim is refreshed: show it once.
+  if (e.type === 'lead.claimed' && list.some((x) => x.type === 'lead.claimed' && x.data.userId === e.data.userId && x.data.leadId === e.data.leadId)) return list
   return [e, ...list].slice(0, ACTIVITY_LIMIT)
 }
 

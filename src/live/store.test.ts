@@ -17,6 +17,12 @@ const logged = (id = String(++n)) =>
   ev('call.logged', { contactId: 'c1', leadId: 'l1', leadName: 'CPE Les Lucioles', userId: 'u2', username: 'marie.lavoie', outcome: 'INTERESTED', durationSeconds: 180, at: '2026-10-05T10:03:00' }, id)
 
 describe('liveReducer', () => {
+  it('shows a refreshed claim (same user and lead, new id) once in the feed', () => {
+    let s = liveReducer(initialLiveState, claimed())
+    s = liveReducer(s, claimed())
+    expect(s.activity).toHaveLength(1)
+  })
+
   it('tracks the connection flag without churning state', () => {
     const s1 = liveReducer(initialLiveState, { kind: 'connection', connected: true })
     expect(s1.connected).toBe(true)
