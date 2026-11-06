@@ -260,3 +260,11 @@ export const IconSend = make(
   'IconSend',
 )
 export const IconZap = make(<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />, 'IconZap')
+export const IconPlus = make(<path d="M12 5v14M5 12h14" />, 'IconPlus')
+export const IconCompass = make(
+  <>
+    <circle cx="12" cy="12" r="9" />
+    <path d="m15.5 8.5-2 5-5 2 2-5 5-2z" />
+  </>,
+  'IconCompass',
+)
