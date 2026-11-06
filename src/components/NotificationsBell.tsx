@@ -13,12 +13,14 @@ const KIND_LABEL: Record<AppNotification['kind'], string> = {
   follow_up_overdue: 'Suivi en retard',
   claim_expired: 'Réservation expirée',
   tender_closing: 'Appel d’offres',
+  inbound_request: 'Demande du site',
 }
 const KIND_COLOR: Record<AppNotification['kind'], string> = {
   follow_up_due: '#c98a1f',
   follow_up_overdue: '#c4613f',
   claim_expired: '#a1a1a6',
   tender_closing: '#4a72b0',
+  inbound_request: '#8a5fa8',
 }
 
 type Permission = 'default' | 'granted' | 'denied' | 'unsupported'
@@ -48,12 +50,12 @@ export function NotificationsBell({ compact = false }: { compact?: boolean }) {
     const ids = new Set(q.data.map((n) => n.id))
     if (seen.current && permission === 'granted') {
       for (const n of q.data) {
-        if (seen.current.has(n.id) || (n.kind !== 'follow_up_due' && n.kind !== 'follow_up_overdue')) continue
+        if (seen.current.has(n.id) || (n.kind !== 'follow_up_due' && n.kind !== 'follow_up_overdue' && n.kind !== 'inbound_request')) continue
         try {
           const native = new Notification(`${KIND_LABEL[n.kind]} — ${n.title}`, { body: n.body, tag: n.id, silent: true })
           native.onclick = () => {
             window.focus()
-            navigate(n.leadId ? `/call?lead=${n.leadId}` : '/follow-ups')
+            navigate(n.leadId ? `/call?leadId=${n.leadId}` : '/follow-ups')
             native.close()
           }
         } catch {
@@ -151,7 +153,7 @@ export function NotificationsBell({ compact = false }: { compact?: boolean }) {
                     </div>
                     <div className="notif-actions">
                       {n.leadId && (
-                        <button type="button" className="btn btn-sm" onClick={() => go(`/call?lead=${n.leadId}`)} title="Appeler maintenant">
+                        <button type="button" className="btn btn-sm" onClick={() => go(`/call?leadId=${n.leadId}`)} title="Appeler maintenant">
                           <IconPhone size={14} /> Appeler
                         </button>
                       )}

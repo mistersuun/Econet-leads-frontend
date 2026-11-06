@@ -26,8 +26,16 @@ import type {
   AuthResponse,
   BreakdownDimension,
   BreakdownRow,
+  BusinessCreateRequest,
   BusinessDTO,
   BusinessUpdateRequest,
+  DiscoverImportResponse,
+  DiscoverRequest,
+  DiscoverResponse,
+  DiscoverCandidate,
+  DuplicateQuery,
+  ImportRunRequest,
+  ImportUpload,
   ContactDTO,
   CurrentUser,
   DataSource,
@@ -83,6 +91,10 @@ export const updateLeadStatus = (id: string, body: StatusUpdateRequest) =>
   apiFetch<BusinessDTO>(`/api/businesses/${id}/status`, { method: 'PATCH', body })
 export const updateLeadPhone = (id: string, phone: string) =>
   apiFetch<BusinessDTO>(`/api/businesses/${id}/phone`, { method: 'PATCH', body: { phone } })
+export const createLead = (body: BusinessCreateRequest) => apiFetch<BusinessDTO>('/api/businesses', { method: 'POST', body })
+/** Live "existe déjà ?" hints (max 5). */
+export const findDuplicates = (q: DuplicateQuery, signal?: AbortSignal) =>
+  apiFetch<BusinessDTO[]>('/api/businesses/duplicates', { query: { name: q.name, phone: q.phone, city: q.city }, signal })
 export const getLeadFilters = () => apiFetch<LeadFilters>('/api/businesses/filters')
 export const exportLeadsCsv = (p: LeadListParams) => {
   const q = leadQuery(p)
@@ -201,3 +213,19 @@ export const getTender = (id: string) => apiFetch<TenderDTO>(`/api/tenders/${id}
 export const updateTender = (id: string, body: TenderUpdateRequest) =>
   apiFetch<TenderDTO>(`/api/tenders/${id}`, { method: 'PATCH', body })
 export const getTenderSummary = () => apiFetch<TenderSummary>('/api/tenders/summary')
+
+// ---- Imports (CSV / XLSX / pasted text)
+export const uploadImportFile = (file: File, opts: { onProgress?: (p: UploadProgress) => void; signal?: AbortSignal } = {}) => {
+  const body = new FormData()
+  body.append('file', file, file.name)
+  return apiUpload<ImportUpload>('/api/imports/files', body, opts)
+}
+export const runImport = (importId: string, body: ImportRunRequest) =>
+  apiFetch<ScraperJobDTO>(`/api/imports/${importId}/run`, { method: 'POST', body })
+export const getImportUpload = (importId: string) => apiFetch<ImportUpload>(`/api/imports/${importId}`)
+
+// ---- Discover (OpenStreetMap)
+export const discoverOsm = (body: DiscoverRequest, signal?: AbortSignal) =>
+  apiFetch<DiscoverResponse>('/api/discover/osm', { method: 'POST', body, signal })
+export const importOsm = (candidates: DiscoverCandidate[], assignToMe: boolean) =>
+  apiFetch<DiscoverImportResponse>('/api/discover/osm/import', { method: 'POST', body: { candidates, assignToMe } })

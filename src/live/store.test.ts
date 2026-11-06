@@ -67,6 +67,11 @@ describe('liveReducer', () => {
     expect(s.activity.map((e) => e.type)).toEqual(['tender.updated'])
   })
 
+  it('puts website requests in the feed', () => {
+    const s = liveReducer(initialLiveState, ev('lead.inbound', { leadId: 'l9', leadName: 'Marie Tremblay', kind: 'booking', at: '2026-10-05T10:05:00' }, '9'))
+    expect(s.activity.map((e) => e.type)).toEqual(['lead.inbound'])
+  })
+
   it('reset clears everything', () => {
     const s = liveReducer(liveReducer(initialLiveState, claimed()), { kind: 'reset' })
     expect(s).toEqual(initialLiveState)

@@ -269,6 +269,8 @@ function describe(e: ActivityEvent): { who: string; what: string; color: string;
     }
     case 'lead.claimed':
       return { who: e.data.username, what: `appelle ${e.data.leadName}`, color: PALETTE.sage, link: `/leads/${e.data.leadId}` }
+    case 'lead.inbound':
+      return { who: 'Site web', what: `${e.data.kind === 'booking' ? 'réservation' : 'demande'} · ${e.data.leadName}`, color: PALETTE.plum, link: `/call?leadId=${e.data.leadId}` }
     case 'tender.updated':
       return { who: 'Appel d’offres', what: `→ ${TENDER_STATUS_META[e.data.status]?.label ?? e.data.status}`, color: PALETTE.blue, link: `/tenders/${e.data.tenderId}` }
   }

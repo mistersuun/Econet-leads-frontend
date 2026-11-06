@@ -5,7 +5,7 @@ import type { LiveEvent, PresenceUser } from '../api/types'
 export const ACTIVITY_LIMIT = 50
 
 /** Event kinds shown in the "En direct" feed. */
-export type ActivityEvent = Extract<LiveEvent, { type: 'call.logged' | 'lead.claimed' | 'tender.updated' }>
+export type ActivityEvent = Extract<LiveEvent, { type: 'call.logged' | 'lead.claimed' | 'tender.updated' | 'lead.inbound' }>
 
 export interface LiveState {
   connected: boolean
@@ -21,7 +21,7 @@ export const initialLiveState: LiveState = { connected: false, presence: [], act
 export type LiveAction = { kind: 'event'; event: LiveEvent } | { kind: 'connection'; connected: boolean } | { kind: 'reset' }
 
 function isActivity(e: LiveEvent): e is ActivityEvent {
-  return e.type === 'call.logged' || e.type === 'lead.claimed' || e.type === 'tender.updated'
+  return e.type === 'call.logged' || e.type === 'lead.claimed' || e.type === 'tender.updated' || e.type === 'lead.inbound'
 }
 
 function pushActivity(list: ActivityEvent[], e: ActivityEvent): ActivityEvent[] {

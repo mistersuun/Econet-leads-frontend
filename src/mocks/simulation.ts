@@ -5,6 +5,7 @@ import type { CallOutcome } from '../api/types'
 import { CLAIM_TTL_MS, applyCall, queueFor, type Db } from './db'
 import { emit } from './live'
 import { broadcastPresence, emitProgress } from './handlers3'
+import { createInbound } from './handlers4'
 import { CONTACT_PEOPLE, NOTES, USERS, isoLocal, type MockUser } from './seed'
 
 const CYCLE_MS = 20_000
@@ -12,7 +13,11 @@ const CLAIM_TO_CALL_MS = 8_000
 const FIRST_DELAY_MS = 3_000
 const OUTCOMES: CallOutcome[] = ['CALLBACK', 'INTERESTED', 'WON', 'NO_ANSWER', 'QUOTE_SENT', 'VOICEMAIL', 'INTERESTED', 'NOT_INTERESTED']
 
+/** A website request every ~90 s (VITE_MOCK_INBOUND_MS shortens it for demos and screenshots). */
+const INBOUND_MS = Number(import.meta.env.VITE_MOCK_INBOUND_MS) || 90_000
+
 let timer: ReturnType<typeof setTimeout> | null = null
+let inboundTimer: ReturnType<typeof setInterval> | null = null
 let cycle = 0
 let running = false
 
@@ -73,10 +78,15 @@ export function startSimulation(getDb: () => Db, forUserId: string): void {
   }
 
   schedule(FIRST_DELAY_MS, step)
+  inboundTimer = setInterval(() => {
+    if (running) createInbound(getDb(), new Date())
+  }, INBOUND_MS)
 }
 
 export function stopSimulation(): void {
   running = false
   if (timer) clearTimeout(timer)
   timer = null
+  if (inboundTimer) clearInterval(inboundTimer)
+  inboundTimer = null
 }

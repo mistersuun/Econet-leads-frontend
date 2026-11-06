@@ -158,6 +158,10 @@ function notificationsFor(d: Db, user: MockUser, now: Date): AppNotification[] {
     const t = parseLocal(l.nextFollowUpAt)
     if (t > todayEnd) continue
     const overdue = t < today0
+    if (l.dataSource === 'Site web' && l.contactCount === 0) {
+      out.push({ id: `inbound_request:${l.id}`, kind: 'inbound_request', title: l.businessName, body: `Nouvelle demande du site · ${l.businessType ?? ''}`, leadId: l.id, at: l.nextFollowUpAt })
+      continue
+    }
     out.push({
       id: `${overdue ? 'follow_up_overdue' : 'follow_up_due'}:${l.id}`,
       kind: overdue ? 'follow_up_overdue' : 'follow_up_due',
