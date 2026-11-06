@@ -6,7 +6,6 @@ import {
   getLeadFilters,
   getMyTargets,
   getTeamToday,
-  getUserTargets,
   listEmailTemplates,
   listScripts,
   updateEmailTemplate,
@@ -411,12 +410,13 @@ function TargetsTab() {
 function TargetRow({ userId, username, me, today }: { userId: string; username: string; me: boolean; today: string }) {
   const qc = useQueryClient()
   const toast = useToast()
-  const q = useQuery({ queryKey: ['targets', userId], queryFn: () => (me ? getMyTargets() : getUserTargets(userId)), retry: false })
+  // The API only exposes the caller's own targets (GET /api/me/targets); an admin can set, not read, a teammate's.
+  const q = useQuery({ queryKey: ['targets', userId], queryFn: getMyTargets, retry: false, enabled: me })
   const [calls, setCalls] = useState<string | null>(null)
   const [conv, setConv] = useState<string | null>(null)
-  const current: UserTargets = q.data ?? { callTarget: 40, conversationTarget: 6 }
+  const current: Partial<UserTargets> = me ? (q.data ?? { callTarget: 40, conversationTarget: 6 }) : {}
   const save = useMutation({
-    mutationFn: (body: UserTargets) => (me ? updateMyTargets(body) : updateUserTargets(userId, body)),
+    mutationFn: (body: Partial<UserTargets>) => (me ? updateMyTargets(body as UserTargets) : updateUserTargets(userId, body as UserTargets)),
     onSuccess: (t) => {
       qc.setQueryData(['targets', userId], t)
       void qc.invalidateQueries({ queryKey: ['today'] })
@@ -426,9 +426,13 @@ function TargetRow({ userId, username, me, today }: { userId: string; username: 
     },
     onError: (e) => toast(errorMessage(e), 'error'),
   })
-  const c = calls ?? String(current.callTarget)
-  const v = conv ?? String(current.conversationTarget)
-  const dirty = Number(c) !== current.callTarget || Number(v) !== current.conversationTarget
+  const c = calls ?? (current.callTarget != null ? String(current.callTarget) : '')
+  const v = conv ?? (current.conversationTarget != null ? String(current.conversationTarget) : '')
+  const changed = (typed: string, now: number | undefined) => typed !== '' && Number(typed) !== now
+  const dirty = changed(c, current.callTarget) || changed(v, current.conversationTarget)
+  const body: Partial<UserTargets> = {}
+  if (changed(c, current.callTarget)) body.callTarget = Number(c)
+  if (changed(v, current.conversationTarget)) body.conversationTarget = Number(v)
   return (
     <tr>
       <td>
@@ -440,13 +444,13 @@ function TargetRow({ userId, username, me, today }: { userId: string; username: 
       </td>
       <td className="num muted small">{today}</td>
       <td>
-        <input className="input num" style={{ width: 96, height: 36 }} inputMode="numeric" value={c} onChange={(e) => setCalls(e.target.value.replace(/\D/g, ''))} aria-label={`Appels par jour pour ${username}`} />
+        <input className="input num" style={{ width: 96, height: 36 }} inputMode="numeric" placeholder="inchangé" value={c} onChange={(e) => setCalls(e.target.value.replace(/\D/g, ''))} aria-label={`Appels par jour pour ${username}`} />
       </td>
       <td>
-        <input className="input num" style={{ width: 96, height: 36 }} inputMode="numeric" value={v} onChange={(e) => setConv(e.target.value.replace(/\D/g, ''))} aria-label={`Conversations par jour pour ${username}`} />
+        <input className="input num" style={{ width: 96, height: 36 }} inputMode="numeric" placeholder="inchangé" value={v} onChange={(e) => setConv(e.target.value.replace(/\D/g, ''))} aria-label={`Conversations par jour pour ${username}`} />
       </td>
       <td className="num">
-        <button type="button" className="btn btn-sm" disabled={!dirty || save.isPending} onClick={() => save.mutate({ callTarget: Number(c), conversationTarget: Number(v) })}>
+        <button type="button" className="btn btn-sm" disabled={!dirty || save.isPending} onClick={() => save.mutate(body)}>
           {save.isPending ? '…' : 'Enregistrer'}
         </button>
       </td>

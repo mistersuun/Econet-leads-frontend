@@ -60,7 +60,7 @@ export function SessionSummary({ session, onClose }: Props) {
               {sum.skipped > 0 && <span className="xs muted">{sum.skipped} passé{sum.skipped > 1 ? 's' : ''}</span>}
             </div>
             <div className="stat">
-              <span className="kpi-label">Joints</span>
+              <span className="kpi-label">Rejoints</span>
               <span className="stat-value num">{sum.connects}</span>
               <span className="xs muted">{pct(sum.connects, sum.dials)} des appels</span>
             </div>

@@ -19,7 +19,7 @@ import { TENDER_STATUS_META } from '../../lib/tenders'
 
 const STAGES: { key: keyof Funnel; label: string }[] = [
   { key: 'dials', label: 'Appels' },
-  { key: 'connects', label: 'Joints' },
+  { key: 'connects', label: 'Rejoints' },
   { key: 'conversations', label: 'Conversations' },
   { key: 'interested', label: 'Intéressés' },
   { key: 'quotes', label: 'Devis' },
@@ -127,7 +127,7 @@ export function BestHoursWidget({ range, className }: { range: DateRange; classN
                   <strong className="num">{tip.cell.calls}</strong>
                 </div>
                 <div className="chart-tip-row">
-                  <span>Joints</span>
+                  <span>Rejoints</span>
                   <strong className="num">{tip.cell.connects}</strong>
                 </div>
                 <div className="chart-tip-row">

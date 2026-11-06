@@ -555,6 +555,11 @@ export function handle(req: Req): Result {
     }
     const sorted = () => [...d.jobs].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     if (method === 'GET' && path === '/api/scraper-jobs') return { json: page(sorted(), q) }
+    if (method === 'GET' && (m = /^\/api\/scraper-jobs\/([0-9a-f-]{36})$/.exec(path))) {
+      const job = d.jobs.find((j) => j.id === m![1])
+      if (!job) throw new HttpError(404, 'Job introuvable')
+      return { json: job }
+    }
     if (method === 'GET' && path === '/api/scraper-jobs/running') return { json: d.jobs.filter((j) => j.status === 'RUNNING' || j.status === 'PENDING') }
     if (method === 'GET' && path === '/api/scraper-jobs/statistics') {
       const count = (s: string) => d.jobs.filter((j) => j.status === s).length

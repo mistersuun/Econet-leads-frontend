@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { listJobs, runImport, uploadImportFile } from '../api/endpoints'
+import { getJob, runImport, uploadImportFile } from '../api/endpoints'
 import { IMPORT_FIELDS, jobSourceName, type ImportField, type ImportMapping, type ImportUpload, type ScraperJobDTO } from '../api/types'
 import { ErrorState } from '../components/States'
 import { useToast } from '../components/Toast'
@@ -300,8 +300,7 @@ function RunStep({ upload, initial, onAgain }: { upload: ImportUpload; initial: 
   const qc = useQueryClient()
   const poll = useQuery({
     queryKey: ['import-job', initial.id],
-    // The existing job list is the polling surface (same as the Sources page).
-    queryFn: async () => (await listJobs(0, 20)).content.find((j) => j.id === initial.id) ?? null,
+    queryFn: () => getJob(initial.id),
     refetchInterval: (q) => {
       const s = (q.state.data ?? initial).status
       return s === 'PENDING' || s === 'RUNNING' ? 1000 : false

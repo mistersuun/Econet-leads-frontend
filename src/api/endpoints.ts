@@ -142,7 +142,6 @@ export const getMyTargets = () => apiFetch<UserTargets>('/api/me/targets')
 export const updateMyTargets = (body: UserTargets) => apiFetch<UserTargets>('/api/me/targets', { method: 'PUT', body })
 export const updateUserTargets = (userId: string, body: UserTargets) =>
   apiFetch<UserTargets>(`/api/users/${userId}/targets`, { method: 'PUT', body })
-export const getUserTargets = (userId: string) => apiFetch<UserTargets>(`/api/users/${userId}/targets`)
 export const getMyToday = () => apiFetch<TodayStats>('/api/dashboard/me/today')
 export const getTeamToday = () => apiFetch<TeamTodayRow[]>('/api/dashboard/team/today')
 
@@ -192,6 +191,7 @@ export const uploadDataSourceFile = (
 }
 export const listJobs = (page = 0, size = 20) =>
   apiFetch<Page<ScraperJobDTO>>('/api/scraper-jobs', { query: { page, size } })
+export const getJob = (id: string) => apiFetch<ScraperJobDTO>(`/api/scraper-jobs/${id}`)
 export const listRunningJobs = () => apiFetch<ScraperJobDTO[]>('/api/scraper-jobs/running')
 export const getJobStatistics = () => apiFetch<JobStatistics>('/api/scraper-jobs/statistics')
 

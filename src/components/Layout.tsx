@@ -2,7 +2,7 @@ import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth/AuthContext'
-import { getLead, getSummary } from '../api/endpoints'
+import { getSummary } from '../api/endpoints'
 import { inboundMessage } from '../lib/inbound'
 import { AddLeadProvider, useAddLead } from './AddLead'
 import { useLiveEvent, useLiveInvalidate } from '../live/LiveProvider'
@@ -87,11 +87,7 @@ function LayoutShell() {
       void qc.invalidateQueries({ queryKey: ['leads'] })
       void qc.invalidateQueries({ queryKey: ['summary'] })
       void qc.invalidateQueries({ queryKey: ['notifications'] })
-      qc.fetchQuery({ queryKey: ['lead', leadId], queryFn: () => getLead(leadId), staleTime: 30_000 })
-        .catch(() => null)
-        .then((lead) =>
-          toast(inboundMessage({ leadName, kind }, lead), 'info', { sticky: true, action: { label: 'Appeler', onClick: () => navigate(`/call?leadId=${leadId}`) } }),
-        )
+      toast(inboundMessage({ leadName, kind }, e.data), 'info', { sticky: true, action: { label: 'Appeler', onClick: () => navigate(`/call?leadId=${leadId}`) } })
     }
   })
   const overdue = (summary.data?.followUpsOverdue ?? 0) + (summary.data?.followUpsDue ?? 0)

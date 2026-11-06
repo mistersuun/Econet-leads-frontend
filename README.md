@@ -166,6 +166,29 @@ Four ways in, all landing in the same leads table:
   toast; the Sources page shows whether the website database is configured
   (`WEBSITE_DB_URL`, `WEBSITE_DB_USERNAME`, `WEBSITE_DB_PASSWORD`).
 
+### Website database (backend environment)
+
+The backend reads the public site's Supabase tables (`booking_requests`, `contact_submissions`)
+read-only and never writes to them. Set these on the **backend** (not the CRM):
+
+| Variable | Example |
+|---|---|
+| `WEBSITE_DB_URL` | `jdbc:postgresql://aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require` (Supabase *session pooler*) |
+| `WEBSITE_DB_USERNAME` | `postgres.<project-ref>` |
+| `WEBSITE_DB_PASSWORD` | the project's database password |
+| `app.website.poll-minutes` (`--app.website.poll-minutes=1`, or `APP_WEBSITE_POLL_MINUTES`) | polling interval, default `5` |
+
+Unset, the "Site web – demandes" source stays inactive and the Sources page lists the variable names.
+Locally you can point it at any Postgres with the same two tables, e.g.
+`WEBSITE_DB_URL=jdbc:postgresql://localhost:5432/econet_website WEBSITE_DB_USERNAME=postgres WEBSITE_DB_PASSWORD=postgres`.
+Each new request becomes an INTERESTED lead due now (top of `/call`), announced by the sticky toast
+and an `inbound_request` notification within one poll interval.
+
+![Live: add lead 409](docs/screenshots/25-live-add-lead-409.png)
+![Live: import summary](docs/screenshots/26-live-import-summary.png)
+![Live: inbound toast](docs/screenshots/27-live-inbound-toast.png)
+![Live: call queue with the inbound lead](docs/screenshots/28-live-call-inbound-top.png)
+
 ![Add a lead](docs/screenshots/20-add-lead.png)
 ![Import](docs/screenshots/21-import.png)
 ![Discover](docs/screenshots/22-discover.png)

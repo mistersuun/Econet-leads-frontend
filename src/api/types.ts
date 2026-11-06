@@ -645,7 +645,7 @@ export interface LiveEventMap {
   'target.progress': { userId: string; callsToday: number; conversationsToday: number; target: number; conversationTarget?: number }
   'tender.updated': { tenderId: string; status: TenderStatus }
   /** Addendum 4: a request arrived from the website. */
-  'lead.inbound': { leadId: string; leadName: string; kind: 'booking' | 'contact'; at: string }
+  'lead.inbound': { leadId: string; leadName: string; kind: 'booking' | 'contact'; at: string; businessType?: string | null; estimatedValue?: number | null }
 }
 
 export type LiveEventType = keyof LiveEventMap
