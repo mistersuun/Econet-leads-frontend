@@ -150,6 +150,31 @@ The mock module is loaded with a dynamic `import()` behind
 `import.meta.env.VITE_USE_MOCKS === 'true'`, which Vite replaces statically, so it is not
 emitted in production builds.
 
+## Adding leads (addendum 4)
+
+Four ways in, all landing in the same leads table:
+
+- **Ajouter un lead** (Leads header, empty call queue, mobile "Plus" menu): live "existe déjà" hints
+  while typing, a 409 panel with *Ouvrir* / *Créer quand même*, and on mobile *Ajouter et appeler*
+  (opens `/call?leadId=…` with that lead first).
+- **Importer** (`/import`): drop a CSV/XLSX or paste cells from a spreadsheet, map the columns
+  (prefilled from the header names), check the live preview and the counts of rows without a name or
+  phone, then run it and read the added / updated / skipped / invalid summary.
+- **Trouver des entreprises** (`/discover`): search a city and categories on OpenStreetMap, tick the
+  results (those with a phone in one click), add them as leads. Data © OpenStreetMap contributors.
+- **Demandes du site**: a `lead.inbound` event shows a sticky "Nouvelle demande du site … — Appeler"
+  toast; the Sources page shows whether the website database is configured
+  (`WEBSITE_DB_URL`, `WEBSITE_DB_USERNAME`, `WEBSITE_DB_PASSWORD`).
+
+![Add a lead](docs/screenshots/20-add-lead.png)
+![Import](docs/screenshots/21-import.png)
+![Discover](docs/screenshots/22-discover.png)
+![Inbound request](docs/screenshots/23-inbound.png)
+
+Mock mode simulates all of it: an import pipeline with delimiter sniffing, a fake Overpass answer for
+Montréal and Laval (a city called "Panne" returns a 502), and a website request every ~90 s
+(`VITE_MOCK_INBOUND_MS` shortens it).
+
 ## Scripts
 
 | Script | What it does |
