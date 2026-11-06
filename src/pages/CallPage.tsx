@@ -18,7 +18,8 @@ import { TodayRing } from '../components/call/TodayRing'
 import { SessionBar } from '../components/session/SessionBar'
 import { SessionModal } from '../components/session/SessionModal'
 import { SessionSummary } from '../components/session/SessionSummary'
-import { IconCheck, IconChevronDown, IconChevronUp, IconMail, IconPhone, IconPlay, IconRefresh, IconScript, IconSkip, IconX } from '../components/icons'
+import { useAddLead } from '../components/AddLead'
+import { IconCheck, IconChevronDown, IconPlus, IconChevronUp, IconMail, IconPhone, IconPlay, IconRefresh, IconScript, IconSkip, IconX } from '../components/icons'
 import { useCallTimer } from '../hooks/useCallTimer'
 import { useLiveEvent } from '../live/LiveProvider'
 import {
@@ -58,8 +59,10 @@ export default function CallPage() {
   const readOnly = hasRole('VIEWER')
   const qc = useQueryClient()
   const toast = useToast()
+  const { open: openAddLead } = useAddLead()
   const [sp, setSp] = useSearchParams()
-  const pinnedId = sp.get('lead')
+  // `?leadId=` (add-and-call, inbound toast) puts that lead first; `?lead=` is the older spelling.
+  const pinnedId = sp.get('leadId') ?? sp.get('lead')
 
   // ---- session mode (client-side, survives a reload)
   const [session, setSessionState] = useState<CallSession | null>(() => loadSession())
@@ -104,7 +107,11 @@ export default function CallPage() {
   // Pin the lead on screen: a background queue refresh (teammate activity, priorities
   // moving) must never swap the business the caller is talking to.
   const [stickyId, setStickyId] = useState<string | null>(null)
-  const lead = remaining.find((l) => l.id === stickyId) ?? remaining[0]
+  // A pinned lead (?leadId=) wins over the sticky one, and nothing is picked while it still loads:
+  // otherwise the queue's first lead would become sticky before the pinned one arrives.
+  const pinnedLoading = !!pinnedId && pinned.isPending
+  const wanted = pinnedId && remaining.some((l) => l.id === pinnedId) ? pinnedId : stickyId
+  const lead = pinnedLoading ? undefined : (remaining.find((l) => l.id === wanted) ?? remaining[0])
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- follow whatever is now first (after an advance or a refetch that dropped the pinned lead)
     if (lead?.id !== stickyId) setStickyId(lead?.id ?? null)
@@ -131,6 +138,7 @@ export default function CallPage() {
     if (!pinnedId) return
     const n = new URLSearchParams(sp)
     n.delete('lead')
+    n.delete('leadId')
     setSp(n, { replace: true })
   }, [pinnedId, sp, setSp])
 
@@ -245,6 +253,11 @@ export default function CallPage() {
                 <Link className="btn btn-sm" to="/leads">
                   Parcourir les leads
                 </Link>
+                {!readOnly && (
+                  <button type="button" className="btn btn-sm" onClick={openAddLead}>
+                    <IconPlus size={16} /> Ajouter un lead
+                  </button>
+                )}
               </div>
             </EmptyState>
           )}

@@ -20,6 +20,8 @@ const SourcesPage = lazy(() => import('./pages/SourcesPage'))
 const EnrichPage = lazy(() => import('./pages/EnrichPage'))
 const TendersPage = lazy(() => import('./pages/TendersPage'))
 const TenderDetailDrawer = lazy(() => import('./pages/TenderDetailDrawer'))
+const ImportPage = lazy(() => import('./pages/ImportPage'))
+const DiscoverPage = lazy(() => import('./pages/DiscoverPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 
 const queryClient = new QueryClient({
@@ -69,6 +71,22 @@ export default function App() {
                 <Route path="tenders" element={<TendersPage />}>
                   <Route path=":id" element={<TenderDetailDrawer />} />
                 </Route>
+                <Route
+                  path="import"
+                  element={
+                    <RequireAuth roles={['ADMIN', 'USER']}>
+                      <ImportPage />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="discover"
+                  element={
+                    <RequireAuth roles={['ADMIN', 'USER']}>
+                      <DiscoverPage />
+                    </RequireAuth>
+                  }
+                />
                 <Route
                   path="sources"
                   element={

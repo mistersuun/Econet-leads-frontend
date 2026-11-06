@@ -16,6 +16,7 @@ import type {
 import { CALL_OUTCOMES, LEAD_STATUSES, TENDER_SOURCES, TENDER_STATUSES } from '../api/types'
 import { CONVERSATION_OUTCOMES, TERMINAL, applyCall, createDb, parseLocal, queueFor, startOfDay, type Db } from './db'
 import { broadcastPresence, emitProgress, handle3 } from './handlers3'
+import { handle4, progressImportJobs } from './handlers4'
 import { HttpError, type Req, type Result } from './http'
 import { emit } from './live'
 import { USERS, isoLocal, makeLead, mockId, type MockUser } from './seed'
@@ -154,6 +155,7 @@ function csvCell(v: unknown): string {
 function progressJobs(d: Db, now: Date) {
   for (const job of d.jobs) {
     if (job.status !== 'RUNNING' && job.status !== 'PENDING') continue
+    if (job.source?.sourceType === 'MANUAL_FILE') continue // file imports are advanced by handlers4
     const started = parseLocal(job.startedAt ?? job.createdAt)
     const elapsed = (now.getTime() - started.getTime()) / 1000
     const total = 9 // seconds to complete
@@ -229,6 +231,10 @@ export function handle(req: Req): Result {
   }
 
   const user = authUser(req)
+
+  // Addendum 4 first: `/api/businesses/duplicates` would otherwise be read as a lead id.
+  const r4 = handle4(req, d, user, now)
+  if (r4) return r4
 
   if (method === 'GET' && path === '/api/auth/me') {
     return { json: { userId: user.userId, username: user.username, email: user.email, role: user.role } }
@@ -505,8 +511,11 @@ export function handle(req: Req): Result {
 
   // Data sources & jobs (ADMIN)
   if (path.startsWith('/api/data-sources') || path.startsWith('/api/scraper-jobs')) {
-    requireRole(user, 'ADMIN')
+    // Anyone who can run a file import may follow its job.
+    if (method === 'GET' && path.startsWith('/api/scraper-jobs')) requireRole(user, 'ADMIN', 'USER')
+    else requireRole(user, 'ADMIN')
     progressJobs(d, now)
+    progressImportJobs(d, now)
     if (method === 'GET' && path === '/api/data-sources') return { json: d.sources }
     if ((m = /^\/api\/data-sources\/([^/]+)\/(import|upload)$/.exec(path)) && method === 'POST') {
       const s = d.sources.find((x) => x.id === m![1])
@@ -516,6 +525,7 @@ export function handle(req: Req): Result {
         if (s.sourceType !== 'BULK_FILE') throw new HttpError(400, 'Cette source n’accepte pas de fichier')
         if (!file.name?.toLowerCase().endsWith('.zip')) throw new HttpError(400, 'Fichier ZIP attendu (registre des entreprises)', { file: 'Format invalide' })
       }
+      if (s.configured === false) throw new HttpError(400, 'Source non configurée : variables d’environnement manquantes sur le serveur')
       if (!s.active) throw new HttpError(400, 'Data source is not active')
       if (d.jobs.some((j) => j.source?.id === s.id && (j.status === 'RUNNING' || j.status === 'PENDING')))
         throw new HttpError(409, 'Une importation est déjà en cours pour cette source')
@@ -539,6 +549,7 @@ export function handle(req: Req): Result {
     if ((m = /^\/api\/data-sources\/([^/]+)\/active$/.exec(path)) && method === 'PATCH') {
       const s = d.sources.find((x) => x.id === m![1])
       if (!s) throw new HttpError(404, 'Source introuvable')
+      if (s.configured === false && q.get('active') === 'true') throw new HttpError(400, 'Source non configurée : variables d’environnement manquantes sur le serveur')
       s.active = q.get('active') === 'true'
       return { json: s }
     }

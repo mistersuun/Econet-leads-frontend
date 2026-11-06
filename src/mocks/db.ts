@@ -33,6 +33,8 @@ import {
 import { makeEnrichLeads, makeNewSources, makeTenders, NEW_SOURCE_NAMES } from './seedSources'
 import { makeEmailTemplates, makeScripts } from './seedScripts'
 
+export const WEBSITE_SOURCE_NAME = 'Site web – demandes'
+
 export const TERMINAL: LeadStatus[] = ['WON', 'LOST', 'DO_NOT_CALL']
 export const CONVERSATION_OUTCOMES: CallOutcome[] = ['INTERESTED', 'QUOTE_SENT', 'WON', 'NOT_INTERESTED', 'CALLBACK']
 
@@ -255,7 +257,11 @@ export function queueFor(db: Db, user: MockUser, now: Date, size: number, f: Que
     return true
   })
   const isDue = (l: BusinessDTO) => !!l.nextFollowUpAt && parseLocal(l.nextFollowUpAt) <= now
-  const due = f.newOnly ? [] : eligible.filter(isDue).sort((a, b) => a.nextFollowUpAt!.localeCompare(b.nextFollowUpAt!))
+  // Website requests are the hottest leads: due ones go before every other follow-up.
+  const inbound = (l: BusinessDTO) => (l.dataSource === 'Site web' ? 0 : 1)
+  const due = f.newOnly
+    ? []
+    : eligible.filter(isDue).sort((a, b) => inbound(a) - inbound(b) || a.nextFollowUpAt!.localeCompare(b.nextFollowUpAt!))
   const fresh = f.followUpsOnly
     ? []
     : eligible
@@ -375,6 +381,9 @@ export function createDb(now: Date = new Date()): Db {
   // Separate generator so the base data above stays identical.
   const r2 = rng(20261006)
   db.sources.push(...makeNewSources(now))
+  // Addendum 4: the website database is not configured in the demo (no WEBSITE_DB_* settings).
+  db.sources.push({ id: mockId('d'), sourceName: WEBSITE_SOURCE_NAME, sourceType: 'WEBSITE_DB', sourceUrl: null, lastSync: null, syncFrequency: 'MANUAL', active: false, recordsCount: 0, configured: false })
+  for (const s of db.sources) s.configured = s.configured ?? true
   db.leads.push(...makeEnrichLeads(r2, now))
   db.tenders = makeTenders(r2, now)
 
@@ -404,6 +413,7 @@ export function createDb(now: Date = new Date()): Db {
 
   // Recompute source record counts from leads.
   for (const s of db.sources) s.recordsCount = db.leads.filter((l) => l.dataSource === s.sourceName).length * 9 + r.int(10, 90)
+  for (const s of db.sources) if (s.sourceType === 'WEBSITE_DB') s.recordsCount = 0
   const tenderSource = { [NEW_SOURCE_NAMES.canadabuys]: 'CANADABUYS', [NEW_SOURCE_NAMES.seao]: 'SEAO' } as Record<string, string>
   for (const s of db.sources) {
     if (tenderSource[s.sourceName]) s.recordsCount = db.tenders.filter((t) => t.source === tenderSource[s.sourceName]).length

@@ -309,7 +309,7 @@ export interface LeaderboardRow {
   won: number
 }
 
-export type SourceType = 'CKAN_API' | 'WEB_SCRAPER' | 'CSV_DOWNLOAD' | 'BULK_FILE' | 'MANUAL'
+export type SourceType = 'CKAN_API' | 'WEB_SCRAPER' | 'CSV_DOWNLOAD' | 'BULK_FILE' | 'MANUAL' | 'MANUAL_FILE' | 'WEBSITE_DB'
 export type SyncFrequency = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'MANUAL'
 
 export interface DataSource {
@@ -321,6 +321,8 @@ export interface DataSource {
   syncFrequency: SyncFrequency | null
   active: boolean
   recordsCount: number | null
+  /** Addendum 4: false when the source needs server settings that are missing (website DB). Absent = configured. */
+  configured?: boolean
   createdAt?: string
   updatedAt?: string
 }
@@ -346,6 +348,9 @@ export interface ScraperJobDTO {
   recordsUpdated: number | null
   errors: string | null
   log?: string | null
+  /** Addendum 4 (file imports): also in the log summary; see `importCounts()`. */
+  skipped?: number | null
+  invalid?: number | null
   durationSeconds: number | null
   createdAt: string
 }
@@ -599,7 +604,7 @@ export interface SendEmailResponse {
 
 // ---- Addendum 3: notifications
 
-export type NotificationKind = 'follow_up_due' | 'follow_up_overdue' | 'claim_expired' | 'tender_closing'
+export type NotificationKind = 'follow_up_due' | 'follow_up_overdue' | 'claim_expired' | 'tender_closing' | 'inbound_request'
 
 export interface AppNotification {
   id: string
@@ -639,6 +644,8 @@ export interface LiveEventMap {
   'lead.updated': { leadId: string; leadStatus: LeadStatus; nextFollowUpAt: string | null }
   'target.progress': { userId: string; callsToday: number; conversationsToday: number; target: number; conversationTarget?: number }
   'tender.updated': { tenderId: string; status: TenderStatus }
+  /** Addendum 4: a request arrived from the website. */
+  'lead.inbound': { leadId: string; leadName: string; kind: 'booking' | 'contact'; at: string }
 }
 
 export type LiveEventType = keyof LiveEventMap
@@ -651,8 +658,115 @@ export const LIVE_EVENT_TYPES: readonly LiveEventType[] = [
   'lead.updated',
   'target.progress',
   'tender.updated',
+  'lead.inbound',
 ]
 
 export type LiveEvent = {
   [K in LiveEventType]: { type: K; data: LiveEventMap[K]; id: string; at: number }
 }[LiveEventType]
+
+// ---- Addendum 4: adding leads
+
+/** POST /api/businesses. Only `businessName` is required. */
+export interface BusinessCreateRequest {
+  businessName: string
+  businessType?: string
+  phone?: string
+  email?: string
+  website?: string
+  addressStreet?: string
+  addressCity?: string
+  postalCode?: string
+  /** Free text: "référence", "salon", "vu en passant"… */
+  leadSource?: string
+  notes?: string
+  qualification?: Qualification
+  leadStatus?: LeadStatus
+  /** Create even if an exact duplicate exists (after a 409). */
+  force?: boolean
+}
+
+export interface DuplicateQuery {
+  name?: string
+  phone?: string
+  city?: string
+}
+
+/** Fields a file column can be mapped to. */
+export const IMPORT_FIELDS = [
+  'businessName',
+  'phone',
+  'email',
+  'website',
+  'addressStreet',
+  'addressCity',
+  'postalCode',
+  'businessType',
+  'notes',
+  'decisionMaker',
+] as const
+export type ImportField = (typeof IMPORT_FIELDS)[number]
+
+export type ImportMapping = Partial<Record<ImportField, string | null>>
+
+export interface ImportUpload {
+  importId: string
+  fileName: string
+  rowCount: number
+  columns: string[]
+  /** Up to 5 rows, aligned with `columns`. */
+  sampleRows: string[][]
+  suggestedMapping: ImportMapping
+}
+
+export interface ImportRunRequest {
+  mapping: ImportMapping
+  defaults: { businessType?: string; addressCity?: string; sourceName: string }
+  skipDuplicates: boolean
+  assignToMe: boolean
+}
+
+export type DiscoverCategory =
+  | 'restaurant'
+  | 'clinic'
+  | 'daycare'
+  | 'office'
+  | 'retail'
+  | 'gym'
+  | 'school'
+  | 'hotel'
+  | 'senior'
+  | 'pharmacy'
+
+export interface DiscoverRequest {
+  city: string
+  categories: DiscoverCategory[]
+  limit?: number
+}
+
+export interface DiscoverCandidate {
+  /** "node/123" or "way/456" */
+  osmId: string
+  name: string
+  category: string
+  phone: string | null
+  website: string | null
+  email: string | null
+  addressStreet: string | null
+  addressCity: string | null
+  postalCode: string | null
+  lat: number | null
+  lon: number | null
+  existingLeadId: string | null
+}
+
+export interface DiscoverResponse {
+  candidates: DiscoverCandidate[]
+  attribution: string
+}
+
+export interface DiscoverImportResponse {
+  added: number
+  skipped: number
+  leads: BusinessDTO[]
+}

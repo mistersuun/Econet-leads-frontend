@@ -42,6 +42,8 @@ export function installMocks(): void {
     const file = req.body.get('file')
     const size = file instanceof File ? file.size : 0
     const total = Math.max(size, 1)
+    // File imports need the content (small, ≤ 10 MB); the register ZIP does not.
+    const text = file instanceof File && /\/api\/imports\//.test(req.url) && !/\.xlsx$/i.test(file.name) ? await file.text() : undefined
     const steps = Math.min(60, Math.max(8, Math.round(size / 4_000_000)))
     for (let i = 1; i <= steps; i++) {
       await delay(100)
@@ -54,7 +56,7 @@ export function installMocks(): void {
         method: 'POST',
         path: u.pathname,
         query: u.searchParams,
-        body: file instanceof File ? { name: file.name, size: file.size } : {},
+        body: file instanceof File ? { name: file.name, size: file.size, text } : {},
         headers: new Headers(req.headers),
       }),
     )
