@@ -95,3 +95,15 @@
   background: var(--green-strong);
   transition: width 0.15s linear;
 }
+.source-config {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+}
+.source-config code {
+  font-size: var(--text-xs);
+  background: var(--fill);
+  padding: 1px 5px;
+  border-radius: var(--r-xs);
+}
