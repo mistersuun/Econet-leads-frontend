@@ -185,3 +185,54 @@
   color: var(--muted);
   margin-bottom: 4px;
 }
+
+/* Compact: narrow column on the call screen. */
+.lead-card.compact {
+  gap: 16px;
+}
+.lead-card.compact .lead-card-name {
+  font-size: var(--text-xl);
+  letter-spacing: -0.02em;
+}
+.lead-card.compact .lead-card-type {
+  font-size: var(--text-sm);
+}
+.lead-card.compact .phone-cta {
+  min-height: 60px;
+  padding: 8px 8px 8px 16px;
+}
+.lead-card.compact .phone-cta-number {
+  font-size: var(--text-2xl);
+}
+.lead-card.compact .phone-cta-icon {
+  width: 42px;
+  height: 42px;
+}
+.lead-card.compact .lead-facts > div {
+  grid-template-columns: 104px minmax(0, 1fr);
+  padding: 8px 0;
+  gap: 12px;
+}
+.lead-card.compact .lead-facts dd {
+  font-size: var(--text-sm);
+}
+@media (max-width: 860px) {
+  /* Phones: the number is the primary control, big and thumb-reachable; secondary facts stay in the drawer. */
+  .lead-card.compact .lead-facts > .fact-secondary {
+    display: none;
+  }
+  .lead-card.compact .lead-facts > div:nth-last-child(3) {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+  .lead-card.compact .phone-cta {
+    min-height: 72px;
+  }
+  .lead-card.compact .phone-cta-number {
+    font-size: 30px;
+  }
+  .lead-card.compact .phone-cta-icon {
+    width: 52px;
+    height: 52px;
+  }
+}

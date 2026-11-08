@@ -59,3 +59,19 @@
 .timeline li:last-child {
   padding-bottom: 0;
 }
+
+/* Sent emails keep subject + body; cap the height so the timeline stays scannable. */
+.tl-notes.tl-email {
+  max-height: 7.5em;
+  overflow: hidden;
+  position: relative;
+}
+.tl-notes.tl-email::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2.2em;
+  background: linear-gradient(to bottom, transparent, var(--surface));
+}

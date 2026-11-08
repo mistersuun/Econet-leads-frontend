@@ -1,0 +1,70 @@
+.presence {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 8px 12px;
+  border-top: 1px solid var(--hairline);
+}
+.presence-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 500;
+}
+.presence-conn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 400;
+}
+.presence-conn .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green-strong);
+}
+.presence-conn .dot.off {
+  background: #c7c7cc;
+}
+.presence-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.presence-list li {
+  display: grid;
+  grid-template-columns: 7px minmax(0, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-xs);
+  min-height: 24px;
+}
+.presence-list .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.presence-list li.calling .dot {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+.presence-name {
+  font-weight: 500;
+  color: var(--ink-2);
+}
+.presence-status {
+  color: var(--muted);
+}
+.presence-list li.offline .presence-name {
+  color: var(--muted);
+}
+.presence-empty {
+  padding: 2px 0 4px;
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}

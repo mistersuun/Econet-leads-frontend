@@ -429,3 +429,239 @@ a.hbar-row:hover {
   height: 24px;
   font-size: 10px;
 }
+
+/* ---------- Addendum 3 insights ---------- */
+
+/* Funnel: horizontal bars that narrow, stage-to-stage rate on the right. */
+.funnel {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.funnel li {
+  display: grid;
+  grid-template-columns: 104px 1fr 56px 52px;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: var(--text-md);
+}
+.funnel-label {
+  white-space: nowrap;
+}
+.funnel-track {
+  height: 18px;
+  border-radius: 4px;
+  background: var(--fill);
+  overflow: hidden;
+}
+.funnel-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--deep);
+  transition: width 0.3s;
+}
+.funnel-value {
+  text-align: right;
+  font-weight: 600;
+}
+.funnel-rate {
+  text-align: right;
+  font-size: var(--text-sm);
+}
+.funnel li.funnel-total {
+  grid-template-columns: 1fr;
+  border-top: 1px solid var(--hairline);
+  margin-top: 4px;
+  padding-top: 10px;
+}
+
+/* Heatmap: Mon–Fri × 8–18, one sequential green scale. */
+.heat-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.heat {
+  display: grid;
+  grid-template-columns: 36px repeat(11, minmax(0, 1fr));
+  gap: 3px;
+  align-items: stretch;
+}
+.heat-row {
+  display: contents;
+}
+.heat-h {
+  text-align: center;
+  padding-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.heat-d {
+  display: flex;
+  align-items: center;
+}
+.heat-cell {
+  aspect-ratio: 1.6;
+  min-height: 24px;
+  border-radius: 4px;
+  transition: outline-color 0.1s;
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+}
+.heat-cell:hover {
+  outline-color: var(--deep);
+}
+.heat-tip {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 8px));
+  pointer-events: none;
+  z-index: 5;
+}
+.heat-tip .chart-tip-title {
+  text-transform: none;
+}
+.heat-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.heat-scale {
+  display: inline-flex;
+  gap: 2px;
+}
+.heat-scale span {
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+}
+@media (max-width: 640px) {
+  .heat-h:nth-child(2n + 1) {
+    visibility: hidden;
+  }
+  .heat-cell {
+    min-height: 18px;
+  }
+}
+
+/* Team today */
+.team-today {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.team-today li {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 80px auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.team-today li:last-child {
+  border-bottom: 0;
+}
+.team-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.team-main .status-dot {
+  gap: 6px;
+  min-width: 0;
+}
+.team-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--fill);
+  overflow: hidden;
+}
+.team-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--sage) 70%, white);
+}
+.team-nums {
+  white-space: nowrap;
+  font-size: var(--text-sm);
+}
+.dot.pulse {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (max-width: 560px) {
+  .team-today li {
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+  }
+  .team-bar {
+    display: none;
+  }
+}
+
+/* Live feed */
+.live-feed .hint .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #c7c7cc;
+}
+.live-feed .hint .dot.live {
+  background: var(--green-strong);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+.feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.feed li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--hairline);
+  font-size: var(--text-sm);
+  animation: fade 0.3s ease-out;
+}
+.feed li:last-child {
+  border-bottom: 0;
+}
+.feed-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  position: relative;
+  top: -1px;
+}
+.feed-text {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.feed-text strong {
+  color: var(--ink);
+}
+.feed-text a {
+  color: var(--ink-2);
+}
+.feed-when {
+  white-space: nowrap;
+}

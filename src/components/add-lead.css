@@ -1,0 +1,165 @@
+/* ---------- "Ajouter un lead" modal ---------- */
+.modal.add-lead {
+  width: min(660px, calc(100vw - 32px));
+}
+.add-lead-form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+.add-lead-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.al-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 16px;
+}
+.al-grid > .field,
+.al-grid > .al-hints {
+  grid-column: span 6;
+}
+.al-grid > .al-4 {
+  grid-column: span 4;
+}
+.al-grid > .al-3 {
+  grid-column: span 3;
+}
+.al-grid > .al-2 {
+  grid-column: span 2;
+}
+.al-grid .req {
+  color: var(--danger);
+}
+.al-hints {
+  list-style: none;
+  margin: -4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.al-hints li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  background: var(--warning-bg);
+  color: var(--warning);
+  font-size: var(--text-sm);
+}
+.al-hints .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #c98a1f;
+  flex: none;
+}
+.al-hint-text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.al-hint-text strong {
+  font-weight: 600;
+}
+.al-hints .muted {
+  color: inherit;
+  opacity: 0.8;
+}
+.al-link {
+  all: unset;
+  flex: none;
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.al-link:focus-visible {
+  outline: 2px solid var(--focus);
+  border-radius: 4px;
+}
+.al-conflict {
+  background: var(--warning-bg);
+  color: var(--ink);
+  border: 1px solid rgba(138, 90, 11, 0.25);
+  border-radius: var(--r-control);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.al-conflict-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.al-conflict-head svg {
+  color: var(--warning);
+  flex: none;
+  margin-top: 2px;
+}
+.al-conflict-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.add-lead-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--hairline);
+}
+.al-call-btn {
+  display: none;
+}
+@media (max-width: 860px) {
+  .al-call-btn {
+    display: inline-flex;
+  }
+  /* With "Ajouter et appeler" present, plain "Ajouter" steps back. */
+  .add-lead-foot .al-add {
+    background: var(--card);
+    border-color: var(--hairline-strong);
+    color: var(--ink);
+  }
+}
+@media (max-width: 560px) {
+  .modal.add-lead {
+    width: 100%;
+    max-height: calc(100dvh - 24px);
+  }
+  .add-lead-body {
+    padding: 16px;
+  }
+  .al-grid {
+    gap: 12px;
+  }
+  .al-grid > .al-4,
+  .al-grid > .al-2 {
+    grid-column: span 6;
+  }
+  .al-grid > .al-m3 {
+    grid-column: span 3;
+  }
+  .add-lead-foot {
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  }
+  .add-lead-foot .spacer {
+    display: none;
+  }
+  .add-lead-foot .btn {
+    flex: 1;
+    padding: 0 8px;
+  }
+  .add-lead-foot .btn:not(.btn-primary) {
+    flex: none;
+  }
+}

@@ -1,0 +1,128 @@
+.discover-page {
+  max-width: 1100px;
+}
+.discover-form {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.discover-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px auto;
+  gap: 16px;
+  align-items: end;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline-strong);
+  background: var(--card);
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+}
+.chip:hover {
+  border-color: var(--control-border);
+}
+.chip[aria-pressed='true'] {
+  background: var(--deep);
+  border-color: var(--deep);
+  color: #fff;
+}
+.chip:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.discover-results {
+  overflow: hidden;
+}
+.discover-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--hairline);
+  flex-wrap: wrap;
+}
+.discover-table .dc-check {
+  width: 44px;
+  padding-right: 0;
+}
+.discover-table input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--green-strong);
+}
+.discover-table tr.is-existing td {
+  color: var(--muted);
+}
+.discover-table tr.is-existing .lead-name {
+  color: var(--ink-2);
+}
+.discover-table .existing {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--warning);
+  font-weight: 500;
+}
+.discover-table .existing .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #c98a1f;
+}
+.show-sm-block {
+  display: none;
+}
+.discover-foot {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--hairline);
+  background: var(--card);
+  border-radius: var(--r-control);
+  flex-wrap: wrap;
+  position: sticky;
+  bottom: 16px;
+}
+.attribution {
+  margin-top: 24px;
+  text-align: center;
+}
+@media (max-width: 860px) {
+  .discover-foot {
+    bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+}
+@media (max-width: 640px) {
+  .discover-form {
+    padding: 16px;
+  }
+  .discover-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .discover-row .field:first-child {
+    grid-column: 1 / -1;
+  }
+  .discover-bar {
+    padding: 12px 16px;
+  }
+  .show-sm-block {
+    display: block;
+  }
+  .discover-foot .btn-primary {
+    flex: 1;
+  }
+}

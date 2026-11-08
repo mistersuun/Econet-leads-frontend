@@ -294,8 +294,10 @@ textarea {
   font-variant-numeric: tabular-nums;
 }
 
-.sidebar-user {
+.sidebar .presence {
   margin-top: auto;
+}
+.sidebar-user {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1251,6 +1253,44 @@ table.table {
 }
 .toast.error .toast-icon {
   color: #f2a48f;
+}
+.toast:has(.toast-action) {
+  max-width: 480px;
+}
+.toast-text {
+  flex: 1;
+  min-width: 0;
+}
+.toast-action {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: transparent;
+  color: #fff;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+.toast-action:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.toast-close {
+  flex: none;
+  display: inline-flex;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  border-radius: 6px;
+}
+.toast-close:hover {
+  color: #fff;
 }
 @media (max-width: 860px) {
   .toasts {

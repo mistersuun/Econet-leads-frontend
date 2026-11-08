@@ -5,11 +5,12 @@ import { getContacts, getLead, updateLead, updateLeadStatus } from '../api/endpo
 import { LEAD_STATUSES, type BusinessDTO, type LeadStatus } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { CallHistory } from '../components/CallHistory'
+import { EmailComposer } from '../components/EmailComposer'
 import { LeadCard } from '../components/LeadCard'
 import { OutcomeForm } from '../components/OutcomeForm'
 import { EmptyState, ErrorState, SkeletonRows } from '../components/States'
 import { useToast } from '../components/Toast'
-import { IconPhone, IconX } from '../components/icons'
+import { IconMail, IconPhone, IconX } from '../components/icons'
 import { errorMessage } from '../lib/errors'
 import { formatCurrency, formatDateTime } from '../lib/format'
 import { STATUS_META } from '../lib/status'
@@ -153,6 +154,7 @@ export default function LeadDetailDrawer() {
   const { hasRole } = useAuth()
   const canEdit = hasRole('ADMIN', 'USER')
   const [calling, setCalling] = useState(false)
+  const [composing, setComposing] = useState(false)
   const closeRef = useRef<HTMLButtonElement>(null)
 
   const lead = useQuery({ queryKey: ['lead', id], queryFn: () => getLead(id!), enabled: !!id })
@@ -205,6 +207,9 @@ export default function LeadDetailDrawer() {
                   ) : (
                     <span className="small muted">Enregistrez le résultat ci-dessous.</span>
                   )}
+                  <button type="button" className="btn" onClick={() => setComposing(true)} disabled={!canEdit} title={canEdit ? undefined : 'Lecture seule'}>
+                    <IconMail size={17} /> Envoyer un courriel
+                  </button>
                 </div>
               </section>
 
@@ -258,6 +263,7 @@ export default function LeadDetailDrawer() {
           )}
         </div>
       </aside>
+      {composing && lead.data && <EmailComposer lead={lead.data} onClose={() => setComposing(false)} />}
     </>
   )
 }

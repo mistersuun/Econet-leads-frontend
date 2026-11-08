@@ -30,7 +30,10 @@ const SOURCE_TYPE: Record<string, string> = {
   CSV_DOWNLOAD: 'Fichier CSV',
   BULK_FILE: 'Fichier ZIP',
   MANUAL: 'Manuel',
+  MANUAL_FILE: 'Fichier importé',
+  WEBSITE_DB: 'Base du site web',
 }
+const WEBSITE_ENV = ['WEBSITE_DB_URL', 'WEBSITE_DB_USERNAME', 'WEBSITE_DB_PASSWORD']
 
 interface UploadState {
   sourceId: string
@@ -233,12 +236,29 @@ export default function SourcesPage() {
                 {sources.data.map((s) => {
                   const isRunning = runningIds.has(s.id)
                   const isBulk = s.sourceType === 'BULK_FILE'
+                  const unconfigured = s.configured === false
+                  const fromFile = s.sourceType === 'MANUAL_FILE'
                   const up = upload?.sourceId === s.id ? upload : null
                   return (
                     <Fragment key={s.id}>
                       <tr className={up ? 'has-upload' : undefined}>
                         <td>
                           <div className="lead-name">{s.sourceName}</div>
+                          {s.sourceType === 'WEBSITE_DB' && (
+                            <div className="source-config xs">
+                              <span className="status-dot">
+                                <span className="dot" style={{ background: unconfigured ? '#c98a1f' : '#2f7a5c' }} />
+                                {unconfigured ? 'Non configurée' : 'Configurée'}
+                              </span>
+                              {unconfigured && (
+                                <span className="muted">
+                                  Définir sur le serveur : {WEBSITE_ENV.map((v, i) => (
+                                    <span key={v}>{i > 0 && ', '}<code>{v}</code></span>
+                                  ))}
+                                </span>
+                              )}
+                            </div>
+                          )}
                           {s.sourceUrl && (
                             <a href={s.sourceUrl} target="_blank" rel="noreferrer" className="xs source-url">
                               {s.sourceUrl.replace(/^https?:\/\//, '')}
@@ -258,7 +278,8 @@ export default function SourcesPage() {
                             aria-checked={s.active}
                             aria-label={`${s.active ? 'Désactiver' : 'Activer'} ${s.sourceName}`}
                             className="switch"
-                            disabled={toggling === s.id}
+                            disabled={toggling === s.id || (unconfigured && !s.active)}
+                            title={unconfigured && !s.active ? 'Configurez d’abord les variables d’environnement du serveur' : undefined}
                             onClick={() => activeMut.mutate(s)}
                           >
                             <span />
@@ -278,15 +299,15 @@ export default function SourcesPage() {
                                 <span className="show-sm">Fichier</span>
                               </button>
                             )}
-                            <button
+                            {!fromFile && <button
                               type="button"
                               className="btn btn-sm"
-                              disabled={!s.active || isRunning || !!up || (importMut.isPending && importMut.variables?.id === s.id)}
+                              disabled={unconfigured || !s.active || isRunning || !!up || (importMut.isPending && importMut.variables?.id === s.id)}
                               onClick={() => importMut.mutate(s)}
                               title={!s.active ? 'Activez la source pour importer' : isBulk ? 'Télécharger depuis l’URL configurée' : undefined}
                             >
                               <IconPlay size={14} /> {isRunning ? 'En cours…' : 'Importer'}
-                            </button>
+                            </button>}
                           </div>
                         </td>
                       </tr>

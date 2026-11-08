@@ -1,7 +1,7 @@
 .source-url {
   color: var(--muted);
   display: block;
-  max-width: 340px;
+  max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -94,4 +94,16 @@
   height: 100%;
   background: var(--green-strong);
   transition: width 0.15s linear;
+}
+.source-config {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+}
+.source-config code {
+  font-size: var(--text-xs);
+  background: var(--fill);
+  padding: 1px 5px;
+  border-radius: var(--r-xs);
 }

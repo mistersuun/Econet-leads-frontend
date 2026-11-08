@@ -9,7 +9,9 @@ import { MultiSelect } from '../components/MultiSelect'
 import { EmptyState, ErrorState, SkeletonRows } from '../components/States'
 import { StatusBadge } from '../components/StatusBadge'
 import { useToast } from '../components/Toast'
-import { IconArrowDown, IconArrowUp, IconChevronLeft, IconChevronRight, IconDownload, IconSearch, IconX } from '../components/icons'
+import { IconArrowDown, IconArrowUp, IconChevronLeft, IconChevronRight, IconDownload, IconPlus, IconSearch, IconX } from '../components/icons'
+import { useAddLead } from '../components/AddLead'
+import { useAuth } from '../auth/AuthContext'
 import { errorMessage } from '../lib/errors'
 import { formatCurrency, formatDate, formatNumber, formatPhone, formatRelative, toApiDate, toDate } from '../lib/format'
 import {
@@ -64,6 +66,8 @@ export default function LeadsPage() {
   const { id: openId } = useParams()
   const [sp] = useSearchParams()
   const toast = useToast()
+  const { open: openAddLead } = useAddLead()
+  const { hasRole } = useAuth()
   const [search, setSearch] = useState(filters.q)
   const [exporting, setExporting] = useState(false)
 
@@ -115,6 +119,11 @@ export default function LeadsPage() {
         <button type="button" className="btn" onClick={doExport} disabled={exporting}>
           <IconDownload size={17} /> {exporting ? 'Export…' : 'Exporter CSV'}
         </button>
+        {hasRole('ADMIN', 'USER') && (
+          <button type="button" className="btn btn-primary" onClick={openAddLead}>
+            <IconPlus size={17} /> Ajouter un lead
+          </button>
+        )}
       </div>
 
       <div className="card filters" role="search">

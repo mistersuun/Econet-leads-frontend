@@ -4,12 +4,17 @@
 import type {
   BusinessDTO,
   CallOutcome,
+  CallScript,
   ContactDTO,
   DataSource,
+  EmailTemplate,
   LeadStatus,
   LogCallRequest,
+  Qualification,
+  QueueParams,
   ScraperJobDTO,
   TenderDTO,
+  UserTargets,
 } from '../api/types'
 import {
   CONTACT_PEOPLE,
@@ -26,9 +31,23 @@ import {
   type Rng,
 } from './seed'
 import { makeEnrichLeads, makeNewSources, makeTenders, NEW_SOURCE_NAMES } from './seedSources'
+import { makeEmailTemplates, makeScripts } from './seedScripts'
+
+export const WEBSITE_SOURCE_NAME = 'Site web – demandes'
 
 export const TERMINAL: LeadStatus[] = ['WON', 'LOST', 'DO_NOT_CALL']
 export const CONVERSATION_OUTCOMES: CallOutcome[] = ['INTERESTED', 'QUOTE_SENT', 'WON', 'NOT_INTERESTED', 'CALLBACK']
+
+export interface Claim {
+  leadId: string
+  userId: string
+  username: string
+  /** Epoch ms */
+  expiresAt: number
+}
+
+export const CLAIM_TTL_MS = 10 * 60_000
+export const PRESENCE_IDLE_MS = 10 * 60_000
 
 export interface Db {
   leads: BusinessDTO[]
@@ -37,6 +56,79 @@ export interface Db {
   jobs: ScraperJobDTO[]
   tenders: TenderDTO[]
   r: Rng
+  // Addendum 3
+  claims: Map<string, Claim>
+  /** Last authenticated request per user (presence). */
+  lastActivity: Map<string, number>
+  targets: Map<string, UserTargets>
+  scripts: CallScript[]
+  templates: EmailTemplate[]
+  /** Lead ids last served by /api/leads/queue, per user (the simulation picks from here). */
+  lastQueue: Map<string, string[]>
+  /** Demo of the 409 path: after each queue fetch, the first claim silently hands the next lead to a teammate (3× max). */
+  sneakyPending: boolean
+  sneakyCount: number
+  emailsSent: Map<string, number[]>
+}
+
+export const DEFAULT_TARGETS: UserTargets = { callTarget: 40, conversationTarget: 6 }
+
+export function sweepClaims(db: Db, now: Date): void {
+  for (const [id, c] of db.claims) if (c.expiresAt <= now.getTime()) db.claims.delete(id)
+}
+
+export function claimOf(db: Db, leadId: string, now: Date): Claim | null {
+  const c = db.claims.get(leadId)
+  if (!c) return null
+  if (c.expiresAt <= now.getTime()) {
+    db.claims.delete(leadId)
+    return null
+  }
+  return c
+}
+
+const QUALIFICATION_KEYS = ['decisionMaker', 'role', 'directPhone', 'email', 'currentProvider', 'contractEndsAt', 'sizeSqft', 'employees', 'frequencyWanted', 'painPoints', 'language', 'bestTimeToCall', 'notes']
+
+/** PATCH semantics: merge; null or blank removes the key; unknown keys are rejected by the caller. */
+export function mergeQualification(lead: BusinessDTO, patch: Qualification): Qualification {
+  const next: Record<string, unknown> = { ...(lead.qualification ?? {}) }
+  for (const [k, v] of Object.entries(patch)) {
+    if (v === undefined) continue
+    if (v === null || (typeof v === 'string' && !v.trim()) || (Array.isArray(v) && v.length === 0)) delete next[k]
+    else next[k] = typeof v === 'string' ? v.trim() : v
+  }
+  lead.qualification = Object.keys(next).length ? (next as Qualification) : null
+  return lead.qualification ?? {}
+}
+
+export function unknownQualificationKeys(patch: object): string[] {
+  return Object.keys(patch).filter((k) => !QUALIFICATION_KEYS.includes(k))
+}
+
+/** Observed conversion by business type over the last 180 days, Laplace-smoothed (contract §3). */
+export function conversionByType(db: Db, now: Date): Map<string, { leadsCalled: number; conversations: number; positive: number; rate: number }> {
+  const since = now.getTime() - 180 * 86400_000
+  const byType = new Map<string, { leads: Set<string>; conversations: number; positive: number }>()
+  const typeOf = new Map(db.leads.map((l) => [l.id, l.businessType ?? '(inconnu)']))
+  for (const c of db.contacts) {
+    if (c.contactType !== 'APPEL' || parseLocal(c.contactDate).getTime() < since) continue
+    const t = typeOf.get(c.businessId) ?? '(inconnu)'
+    const row = byType.get(t) ?? { leads: new Set<string>(), conversations: 0, positive: 0 }
+    row.leads.add(c.businessId)
+    if (CONVERSATION_OUTCOMES.includes(c.outcome as CallOutcome)) row.conversations++
+    if (c.outcome === 'WON' || c.outcome === 'INTERESTED' || c.outcome === 'QUOTE_SENT') row.positive++
+    byType.set(t, row)
+  }
+  const out = new Map<string, { leadsCalled: number; conversations: number; positive: number; rate: number }>()
+  for (const [t, row] of byType) {
+    out.set(t, { leadsCalled: row.leads.size, conversations: row.conversations, positive: row.positive, rate: (row.positive + 2) / (row.leads.size + 10) })
+  }
+  return out
+}
+
+export function priorityScore(lead: BusinessDTO, rates: ReturnType<typeof conversionByType>): number {
+  const rate = rates.get(lead.businessType ?? '(inconnu)')?.rate ?? 2 / 10
+  return Math.round((0.5 * (lead.dataQualityScore ?? 0) + 0.5 * 100 * rate) * 10) / 10
 }
 
 export function parseLocal(iso: string): Date {
@@ -114,6 +206,10 @@ export function applyCall(db: Db, lead: BusinessDTO, user: MockUser, req: LogCal
   lead.contactCount += 1
   lead.nextFollowUpAt = TERMINAL.includes(status) ? (req.nextFollowUpAt ?? null) : followUp
   if (req.estimatedValue !== undefined && req.estimatedValue !== null) lead.estimatedValue = req.estimatedValue
+  if (req.qualification) mergeQualification(lead, req.qualification)
+  if (req.snoozeUntil && (req.outcome === 'NO_ANSWER' || req.outcome === 'VOICEMAIL' || req.outcome === 'CALLBACK')) {
+    lead.nextFollowUpAt = req.snoozeUntil
+  }
   if (!lead.assignedToId) {
     lead.assignedToId = user.userId
     lead.assignedToName = user.username
@@ -134,23 +230,49 @@ export function applyCall(db: Db, lead: BusinessDTO, user: MockUser, req: LogCal
     username: user.username,
     outcome: req.outcome,
     createdAt: nowIso,
+    durationSeconds: req.durationSeconds ?? null,
   }
   db.contacts.push(contact)
+  db.claims.delete(lead.id)
   return contact
 }
 
-/** Queue per contract: follow-ups due (oldest first), then NEW with phone by quality desc, createdAt asc. */
-export function queueFor(db: Db, user: MockUser, now: Date, size: number): BusinessDTO[] {
-  const eligible = db.leads.filter(
-    (l) => l.phone && !TERMINAL.includes(l.leadStatus) && (!l.assignedToId || l.assignedToId === user.userId),
-  )
-  const due = eligible
-    .filter((l) => l.nextFollowUpAt && parseLocal(l.nextFollowUpAt) <= now)
-    .sort((a, b) => a.nextFollowUpAt!.localeCompare(b.nextFollowUpAt!))
-  const fresh = eligible
-    .filter((l) => l.leadStatus === 'NEW' && !(l.nextFollowUpAt && parseLocal(l.nextFollowUpAt) <= now))
-    .sort((a, b) => (b.dataQualityScore ?? 0) - (a.dataQualityScore ?? 0) || a.createdAt.localeCompare(b.createdAt))
-  return [...due, ...fresh].slice(0, size)
+/**
+ * Queue per contract: follow-ups due (oldest first), then NEW with phone by
+ * priority desc, createdAt asc. Leads claimed by someone else are excluded.
+ * Addendum 3 filters apply to both halves.
+ */
+export function queueFor(db: Db, user: MockUser, now: Date, size: number, f: QueueParams = {}): BusinessDTO[] {
+  sweepClaims(db, now)
+  const rates = conversionByType(db, now)
+  const eligible = db.leads.filter((l) => {
+    if (!l.phone || TERMINAL.includes(l.leadStatus)) return false
+    if (l.assignedToId && l.assignedToId !== user.userId) return false
+    const claim = db.claims.get(l.id)
+    if (claim && claim.userId !== user.userId) return false
+    if (f.businessType?.length && !f.businessType.includes(l.businessType ?? '')) return false
+    if (f.city?.length && !f.city.includes(l.addressCity ?? '')) return false
+    if (f.sourceIn?.length && !f.sourceIn.includes(l.dataSource ?? '')) return false
+    if (f.minQualityScore != null && (l.dataQualityScore ?? 0) < f.minQualityScore) return false
+    return true
+  })
+  const isDue = (l: BusinessDTO) => !!l.nextFollowUpAt && parseLocal(l.nextFollowUpAt) <= now
+  // Website requests are the hottest leads: due ones go before every other follow-up.
+  const inbound = (l: BusinessDTO) => (l.dataSource === 'Site web' ? 0 : 1)
+  const due = f.newOnly
+    ? []
+    : eligible.filter(isDue).sort((a, b) => inbound(a) - inbound(b) || a.nextFollowUpAt!.localeCompare(b.nextFollowUpAt!))
+  const fresh = f.followUpsOnly
+    ? []
+    : eligible
+        .filter((l) => l.leadStatus === 'NEW' && !isDue(l))
+        .sort((a, b) => priorityScore(b, rates) - priorityScore(a, rates) || a.createdAt.localeCompare(b.createdAt))
+  return [...due, ...fresh].slice(0, size).map((l) => {
+    l.priorityScore = priorityScore(l, rates)
+    const c = db.claims.get(l.id)
+    l.claimedBy = c ? { userId: c.userId, username: c.username } : null
+    return l
+  })
 }
 
 function pickOutcome(r: Rng, status: LeadStatus): CallOutcome {
@@ -182,7 +304,23 @@ export function createDb(now: Date = new Date()): Db {
     created.setHours(3, r.int(0, 59), r.int(0, 59), 0)
     leads.push(makeLead(r, created))
   }
-  const db: Db = { leads, contacts: [], sources, jobs: makeHistoricalJobs(sources, now, r), tenders: [], r }
+  const db: Db = {
+    leads,
+    contacts: [],
+    sources,
+    jobs: makeHistoricalJobs(sources, now, r),
+    tenders: [],
+    r,
+    claims: new Map(),
+    lastActivity: new Map(),
+    targets: new Map(),
+    scripts: makeScripts(now),
+    templates: makeEmailTemplates(),
+    lastQueue: new Map(),
+    sneakyPending: false,
+    sneakyCount: 0,
+    emailsSent: new Map(),
+  }
 
   // Simulate the last 60 days of calling by the two agents (and the admin now and then).
   const callers = USERS.filter((u) => u.role !== 'VIEWER')
@@ -243,11 +381,39 @@ export function createDb(now: Date = new Date()): Db {
   // Separate generator so the base data above stays identical.
   const r2 = rng(20261006)
   db.sources.push(...makeNewSources(now))
+  // Addendum 4: the website database is not configured in the demo (no WEBSITE_DB_* settings).
+  db.sources.push({ id: mockId('d'), sourceName: WEBSITE_SOURCE_NAME, sourceType: 'WEBSITE_DB', sourceUrl: null, lastSync: null, syncFrequency: 'MANUAL', active: false, recordsCount: 0, configured: false })
+  for (const s of db.sources) s.configured = s.configured ?? true
   db.leads.push(...makeEnrichLeads(r2, now))
   db.tenders = makeTenders(r2, now)
 
+  // Facts captured on earlier calls, so the qualification form shows previous values.
+  const PROVIDERS = ['none', 'in-house', 'Entretien Pro-Net', 'GDI', 'Services ménagers Roy', 'none', 'Nettoyage Lavoie']
+  const DECIDERS = ['Mme Gagnon', 'M. Tremblay', 'Sylvie Côté', 'Dre Pelletier', 'Marc-André Roy', 'M. Haddad']
+  const ROLES = ['directrice', 'propriétaire', 'gérant', 'directrice générale', 'adjointe administrative']
+  db.leads
+    .filter((l) => l.leadStatus === 'INTERESTED' || l.leadStatus === 'QUOTE_SENT' || (l.leadStatus === 'CONTACTED' && r.chance(0.3)))
+    .forEach((l, i) => {
+      const end = new Date(now)
+      end.setMonth(end.getMonth() + 1 + (i % 9))
+      const q: Qualification = {
+        decisionMaker: DECIDERS[i % DECIDERS.length],
+        role: ROLES[i % ROLES.length],
+        currentProvider: PROVIDERS[i % PROVIDERS.length],
+        employees: [6, 12, 25, 40, 80][i % 5],
+        frequencyWanted: (['weekly', 'bi-weekly', 'weekly', 'monthly'] as const)[i % 4],
+        painPoints: [['qualité'], ['prix', 'fiabilité'], ['horaire'], []][i % 4],
+        language: i % 7 === 3 ? 'en' : 'fr',
+        bestTimeToCall: ['mardi AM', 'après 14 h', null, 'lundi ou jeudi'][i % 4],
+      }
+      if (q.currentProvider !== 'none' && q.currentProvider !== 'in-house') q.contractEndsAt = end.toISOString().slice(0, 10)
+      if (i % 3 === 0 && l.email) q.email = l.email.replace('info@', 'direction@')
+      l.qualification = q
+    })
+
   // Recompute source record counts from leads.
   for (const s of db.sources) s.recordsCount = db.leads.filter((l) => l.dataSource === s.sourceName).length * 9 + r.int(10, 90)
+  for (const s of db.sources) if (s.sourceType === 'WEBSITE_DB') s.recordsCount = 0
   const tenderSource = { [NEW_SOURCE_NAMES.canadabuys]: 'CANADABUYS', [NEW_SOURCE_NAMES.seao]: 'SEAO' } as Record<string, string>
   for (const s of db.sources) {
     if (tenderSource[s.sourceName]) s.recordsCount = db.tenders.filter((t) => t.source === tenderSource[s.sourceName]).length

@@ -1,12 +1,19 @@
-import { Suspense, useState, type ReactNode } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth/AuthContext'
 import { getSummary } from '../api/endpoints'
+import { inboundMessage } from '../lib/inbound'
+import { AddLeadProvider, useAddLead } from './AddLead'
+import { useLiveEvent, useLiveInvalidate } from '../live/LiveProvider'
 import { ROLE_LABEL } from '../lib/status'
+import { NotificationsBell } from './NotificationsBell'
 import { SkeletonRows } from './States'
+import { TeamPresence } from './TeamPresence'
+import { useToast } from './Toast'
 import {
   IconCalendarClock,
+  IconCompass,
   IconDashboard,
   IconDatabase,
   IconFileText,
@@ -15,6 +22,9 @@ import {
   IconMore,
   IconPhone,
   IconPhonePlus,
+  IconPlus,
+  IconSettings,
+  IconUpload,
   IconUsers,
 } from './icons'
 
@@ -35,10 +45,51 @@ interface NavItem {
 }
 
 export function Layout() {
+  return (
+    <AddLeadProvider>
+      <LayoutShell />
+    </AddLeadProvider>
+  )
+}
+
+function LayoutShell() {
   const { user, logout, hasRole } = useAuth()
+  const { open: openAddLead } = useAddLead()
+  const navigate = useNavigate()
+  const qc = useQueryClient()
   const [sheetOpen, setSheetOpen] = useState(false)
   const location = useLocation()
+  const toast = useToast()
   const summary = useQuery({ queryKey: ['summary', 'nav'], queryFn: () => getSummary(), staleTime: 60_000 })
+  const bannerRef = useRef<HTMLDivElement>(null)
+
+  // The call screen fits the viewport exactly; tell it how tall the chrome above it is.
+  useEffect(() => {
+    const el = bannerRef.current
+    const set = () => document.documentElement.style.setProperty('--banner-h', `${el?.offsetHeight ?? 0}px`)
+    set()
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(set)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  // Keep every screen in step with the team, and celebrate a teammate's win.
+  useLiveInvalidate()
+  useLiveEvent((e) => {
+    if (e.type === 'call.logged' && e.data.outcome === 'WON' && e.data.userId !== user?.userId) {
+      toast(`${e.data.username} a gagné un contrat — ${e.data.leadName}`)
+    }
+    if (e.type === 'lead.inbound' && user?.role !== 'VIEWER') {
+      // A website request: the hottest lead there is. Sticky, one tap to call.
+      const { leadId, leadName, kind } = e.data
+      void qc.invalidateQueries({ queryKey: ['queue'] })
+      void qc.invalidateQueries({ queryKey: ['leads'] })
+      void qc.invalidateQueries({ queryKey: ['summary'] })
+      void qc.invalidateQueries({ queryKey: ['notifications'] })
+      toast(inboundMessage({ leadName, kind }, e.data), 'info', { sticky: true, action: { label: 'Appeler', onClick: () => navigate(`/call?leadId=${leadId}`) } })
+    }
+  })
   const overdue = (summary.data?.followUpsOverdue ?? 0) + (summary.data?.followUpsDue ?? 0)
   const toEnrich = summary.data?.toEnrich ?? 0
 
@@ -49,7 +100,18 @@ export function Layout() {
     { to: '/leads', label: 'Leads', short: 'Leads', icon: IconUsers, tab: true },
     { to: '/follow-ups', label: 'Suivis', short: 'Suivis', icon: IconCalendarClock, badge: overdue, tab: true },
     { to: '/tenders', label: 'Appels d’offres', short: 'Offres', icon: IconFileText },
-    ...(hasRole('ADMIN') ? [{ to: '/sources', label: 'Sources', short: 'Sources', icon: IconDatabase }] : []),
+    ...(hasRole('ADMIN', 'USER')
+      ? [
+          { to: '/import', label: 'Importer', short: 'Importer', icon: IconUpload },
+          { to: '/discover', label: 'Trouver des entreprises', short: 'Trouver', icon: IconCompass },
+        ]
+      : []),
+    ...(hasRole('ADMIN')
+      ? [
+          { to: '/sources', label: 'Sources', short: 'Sources', icon: IconDatabase },
+          { to: '/settings', label: 'Réglages', short: 'Réglages', icon: IconSettings },
+        ]
+      : []),
   ]
   const tabs = items.filter((it) => it.tab)
   const more = items.filter((it) => !it.tab)
@@ -81,7 +143,9 @@ export function Layout() {
               {!!it.count && <span className="nav-count" aria-label={`${it.count} leads sans téléphone`}>{it.count}</span>}
             </NavLink>
           ))}
+          <NotificationsBell />
         </nav>
+        <TeamPresence />
         <div className="sidebar-user">
           <span className="avatar" aria-hidden="true">{initials}</span>
           <div className="who">
@@ -95,7 +159,7 @@ export function Layout() {
       </aside>
 
       <div className="main">
-        {MOCKS && <div className="mock-banner">Mode démo — données simulées<span className="hide-sm"> en mémoire (VITE_USE_MOCKS=true)</span></div>}
+        {MOCKS && <div className="mock-banner" ref={bannerRef}>Mode démo — données simulées<span className="hide-sm"> en mémoire (VITE_USE_MOCKS=true)</span></div>}
         <header className="topbar">
           <div className="brand">
             <span className="brand-mark">
@@ -104,6 +168,7 @@ export function Layout() {
             EcoNet Leads
           </div>
           <span className="spacer" />
+          <NotificationsBell compact />
           <span className="avatar" style={{ width: 28, height: 28 }} aria-label={user?.username}>
             {initials}
           </span>
@@ -136,6 +201,11 @@ export function Layout() {
 
       {sheetOpen && (
         <MoreSheet key={location.pathname} onClose={() => setSheetOpen(false)}>
+          {hasRole('ADMIN', 'USER') && (
+            <button type="button" className="sheet-item" onClick={() => { setSheetOpen(false); openAddLead() }}>
+              <IconPlus size={20} /> Ajouter un lead
+            </button>
+          )}
           {more.map((it) => (
             <NavLink key={it.to} to={it.to} onClick={() => setSheetOpen(false)}>
               <it.icon size={20} /> {it.to === '/sources' ? 'Sources de données' : it.label}

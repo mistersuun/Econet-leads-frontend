@@ -43,6 +43,7 @@ export interface MockUser {
   email: string
   role: 'ADMIN' | 'USER' | 'VIEWER'
   password: string
+  createdAt?: string
 }
 
 export const USERS: MockUser[] = [

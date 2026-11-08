@@ -5,6 +5,7 @@ import { ApiError } from './api/client'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import { ToastProvider } from './components/Toast'
 import { Layout } from './components/Layout'
+import { LiveProvider } from './live/LiveProvider'
 import type { Role } from './api/types'
 import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
@@ -19,6 +20,9 @@ const SourcesPage = lazy(() => import('./pages/SourcesPage'))
 const EnrichPage = lazy(() => import('./pages/EnrichPage'))
 const TendersPage = lazy(() => import('./pages/TendersPage'))
 const TenderDetailDrawer = lazy(() => import('./pages/TenderDetailDrawer'))
+const ImportPage = lazy(() => import('./pages/ImportPage'))
+const DiscoverPage = lazy(() => import('./pages/DiscoverPage'))
+const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,7 +50,8 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
         <AuthProvider>
-          <BrowserRouter>
+          <LiveProvider>
+            <BrowserRouter>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route
@@ -67,6 +72,22 @@ export default function App() {
                   <Route path=":id" element={<TenderDetailDrawer />} />
                 </Route>
                 <Route
+                  path="import"
+                  element={
+                    <RequireAuth roles={['ADMIN', 'USER']}>
+                      <ImportPage />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="discover"
+                  element={
+                    <RequireAuth roles={['ADMIN', 'USER']}>
+                      <DiscoverPage />
+                    </RequireAuth>
+                  }
+                />
+                <Route
                   path="sources"
                   element={
                     <RequireAuth roles={['ADMIN']}>
@@ -74,10 +95,19 @@ export default function App() {
                     </RequireAuth>
                   }
                 />
+                <Route
+                  path="settings/:tab?"
+                  element={
+                    <RequireAuth roles={['ADMIN']}>
+                      <SettingsPage />
+                    </RequireAuth>
+                  }
+                />
                 <Route path="*" element={<NotFoundPage />} />
               </Route>
             </Routes>
-          </BrowserRouter>
+            </BrowserRouter>
+          </LiveProvider>
         </AuthProvider>
       </ToastProvider>
     </QueryClientProvider>
