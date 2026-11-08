@@ -140,3 +140,17 @@
     max-height: 320px;
   }
 }
+
+/* Équipe */
+.team-list { list-style: none; margin: 0; padding: 0; }
+.team-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 12px 16px; border-top: 1px solid var(--border, #e5e7eb); }
+.team-id { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 260px; }
+.team-who { display: flex; flex-direction: column; min-width: 0; }
+.team-targets, .team-edit { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; }
+.team-targets { align-items: center; }
+.team-edit .field { width: 130px; }
+.team-form { max-width: 460px; }
+@media (max-width: 480px) {
+  .team-row { padding: 12px; }
+  .team-edit .field { flex: 1 1 120px; width: auto; }
+}

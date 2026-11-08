@@ -307,6 +307,36 @@ export function handle3(req: Req, d: Db, user: MockUser, now: Date): Result | nu
       return { json: targetsOf(d, user.userId) }
     }
   }
+  if (method === 'GET' && path === '/api/users') {
+    requireRole(user, 'ADMIN')
+    return {
+      json: USERS.map((u, i) => ({
+        id: u.userId,
+        username: u.username,
+        email: u.email,
+        role: u.role,
+        ...targetsOf(d, u.userId),
+        createdAt: u.createdAt ?? new Date(Date.UTC(2026, 0, 5 + i)).toISOString(),
+      })),
+    }
+  }
+  if (method === 'POST' && path === '/api/auth/register') {
+    requireRole(user, 'ADMIN')
+    const b = (req.body ?? {}) as { username?: string; email?: string; password?: string; role?: string }
+    const username = (b.username ?? '').trim().toLowerCase()
+    const email = (b.email ?? '').trim()
+    if (username.length < 3) throw new HttpError(400, "Le nom d'utilisateur doit contenir au moins 3 caractères")
+    if (!/^\S+@\S+\.\S+$/.test(email)) throw new HttpError(400, 'Courriel invalide')
+    if ((b.password ?? '').length < 8) throw new HttpError(400, 'Le mot de passe doit contenir au moins 8 caractères')
+    const role = b.role === 'ADMIN' || b.role === 'VIEWER' ? b.role : 'USER'
+    if (USERS.some((u) => u.username === username)) throw new HttpError(409, "Ce nom d'utilisateur existe déjà")
+    const created = { userId: mockId('u'), username, email, role, password: b.password!, createdAt: new Date().toISOString() } as MockUser
+    USERS.push(created)
+    return {
+      status: 201,
+      json: { accessToken: `mock-access.${created.userId}.${Date.now() + 3_600_000}`, refreshToken: `mock-refresh.${created.userId}`, tokenType: 'Bearer', userId: created.userId, username, email, role },
+    }
+  }
   if ((m = /^\/api\/users\/([^/]+)\/targets$/.exec(path))) {
     requireRole(user, 'ADMIN')
     if (!USERS.some((u) => u.userId === m![1])) throw new HttpError(404, 'Utilisateur introuvable')

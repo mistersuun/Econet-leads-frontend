@@ -29,12 +29,14 @@ import { useToast } from '../components/Toast'
 import { errorMessage } from '../lib/errors'
 import { formatRelative } from '../lib/format'
 import { placeholderKeys } from '../lib/placeholders'
+import TeamSection from './TeamSection'
 import './settings.css'
 
 const TABS = [
   { key: 'scripts', label: 'Scripts d’appel' },
   { key: 'emails', label: 'Modèles de courriel' },
   { key: 'targets', label: 'Objectifs' },
+  { key: 'team', label: 'Équipe' },
 ] as const
 type Tab = (typeof TABS)[number]['key']
 
@@ -56,7 +58,10 @@ const EMAIL_PLACEHOLDERS: { key: string; help: string }[] = [
 export default function SettingsPage() {
   const { tab } = useParams<{ tab?: string }>()
   const navigate = useNavigate()
-  const current: Tab = (TABS.find((t) => t.key === tab)?.key ?? 'scripts') as Tab
+  const { hasRole } = useAuth()
+  const isAdmin = hasRole('ADMIN')
+  const tabs = TABS.filter((t) => t.key !== 'team' || isAdmin)
+  const current: Tab = (tabs.find((t) => t.key === tab)?.key ?? 'scripts') as Tab
   useEffect(() => {
     if (!tab) navigate('/settings/scripts', { replace: true })
   }, [tab, navigate])
@@ -70,7 +75,7 @@ export default function SettingsPage() {
         </div>
       </div>
       <nav className="segmented settings-tabs" aria-label="Sections des réglages">
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <NavLink key={t.key} to={`/settings/${t.key}`} aria-pressed={current === t.key} role="button">
             {t.label}
           </NavLink>
@@ -79,6 +84,7 @@ export default function SettingsPage() {
       {current === 'scripts' && <ScriptsTab />}
       {current === 'emails' && <EmailsTab />}
       {current === 'targets' && <TargetsTab />}
+      {current === 'team' && isAdmin && <TeamSection />}
     </div>
   )
 }

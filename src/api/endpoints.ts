@@ -23,6 +23,8 @@ import type {
   TeamTodayRow,
   TodayStats,
   UserTargets,
+  TeamMember,
+  RegisterBody,
   AuthResponse,
   BreakdownDimension,
   BreakdownRow,
@@ -140,6 +142,10 @@ export const createScript = (body: ScriptUpsert) => apiFetch<CallScript>('/api/s
 // ---- Targets, today, team
 export const getMyTargets = () => apiFetch<UserTargets>('/api/me/targets')
 export const updateMyTargets = (body: UserTargets) => apiFetch<UserTargets>('/api/me/targets', { method: 'PUT', body })
+// ---- Team (ADMIN). registerUser returns the NEW user's tokens: callers must ignore them (never setSession).
+export const getUsers = () => apiFetch<TeamMember[]>('/api/users')
+export const registerUser = (body: RegisterBody) => apiFetch<AuthResponse>('/api/auth/register', { method: 'POST', body })
+export const getUserTargets = (userId: string) => apiFetch<UserTargets>(`/api/users/${userId}/targets`)
 export const updateUserTargets = (userId: string, body: UserTargets) =>
   apiFetch<UserTargets>(`/api/users/${userId}/targets`, { method: 'PUT', body })
 export const getMyToday = () => apiFetch<TodayStats>('/api/dashboard/me/today')
@@ -229,3 +235,4 @@ export const discoverOsm = (body: DiscoverRequest, signal?: AbortSignal) =>
   apiFetch<DiscoverResponse>('/api/discover/osm', { method: 'POST', body, signal })
 export const importOsm = (candidates: DiscoverCandidate[], assignToMe: boolean) =>
   apiFetch<DiscoverImportResponse>('/api/discover/osm/import', { method: 'POST', body: { candidates, assignToMe } })
+export const setUserTargets = updateUserTargets

@@ -466,6 +466,23 @@ export interface ScriptUpsert {
 
 // ---- Addendum 3: targets, today, team
 
+export interface TeamMember {
+  id: string
+  username: string
+  email: string
+  role: Role
+  callTarget: number
+  conversationTarget: number
+  createdAt: string
+}
+
+export interface RegisterBody {
+  username: string
+  email: string
+  password: string
+  role?: Role
+}
+
 export interface UserTargets {
   callTarget: number
   conversationTarget: number
