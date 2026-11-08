@@ -1,6 +1,15 @@
 import { getSession, sessionFromAuth, setSession } from './session'
 import type { AuthResponse } from './types'
 
+export const MISSING_API_URL_MESSAGE = 'Configuration manquante : VITE_API_URL'
+
+/** True when a production build has no backend URL (and is not the mock build): calls would silently hit localhost. */
+export function isApiUrlMissing(env: { PROD?: boolean; VITE_API_URL?: string; VITE_USE_MOCKS?: string }): boolean {
+  return Boolean(env.PROD) && !env.VITE_API_URL?.trim() && env.VITE_USE_MOCKS !== 'true'
+}
+
+export const API_URL_MISSING: boolean = isApiUrlMissing(import.meta.env)
+
 export const API_URL: string = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/+$/, '')
 
 export class ApiError extends Error {

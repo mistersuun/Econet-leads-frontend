@@ -253,3 +253,27 @@ Example (Netlify): build command `npm run build`, publish directory `dist`, env
 `VITE_API_URL=https://api.example.com`.
 Example (Azure Static Web Apps): `app_location: "/"`, `output_location: "dist"`,
 `app_build_command: "npm run build"`, with `VITE_API_URL` set in the workflow env.
+
+## Déploiement (Netlify)
+
+Guide pas à pas, sans connaissances techniques. Prérequis : le backend est déjà en ligne sur
+Render (voir `DEPLOY.md` dans le dépôt du backend pour sa mise en place, la base de données et
+les autres variables) et vous avez son adresse, par exemple `https://econet-leads-api.onrender.com`.
+
+1. Sur [netlify.com](https://app.netlify.com), cliquez **Add new site** > **Import an existing
+   project**, choisissez GitHub, puis le dépôt **`Econet-leads-frontend`**.
+2. Les réglages de build (commande `npm run build`, dossier `dist`, Node 20, redirection SPA et
+   en-têtes de sécurité) sont lus automatiquement depuis `netlify.toml` : ne rien modifier.
+3. Avant de déployer, ouvrez **Add environment variables** (ou plus tard **Site configuration >
+   Environment variables**) et ajoutez :
+   - `VITE_API_URL` = l'adresse du backend Render, **sans « / » à la fin**
+     (`https://econet-leads-api.onrender.com`, et non `https://econet-leads-api.onrender.com/`).
+4. Cliquez **Deploy**. Si vous ajoutez ou changez la variable après coup, relancez un déploiement
+   (**Deploys > Trigger deploy > Clear cache and deploy site**) : elle est lue à la construction.
+   Si elle manque, le site affiche « Configuration manquante : VITE_API_URL ».
+5. Copiez l'adresse du site obtenue (par exemple `https://econet-leads.netlify.app`) et ajoutez-la
+   à la variable **`CORS_ALLOWED_ORIGINS`** du backend sur Render (séparée des autres par une
+   virgule, sans « / » final), puis laissez Render redémarrer. Sans cette étape, la connexion
+   échouera dans le navigateur.
+
+Ne jamais définir `VITE_USE_MOCKS=true` sur un site déployé.

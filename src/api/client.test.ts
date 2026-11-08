@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { API_URL, ApiError, apiFetch, apiUpload, buildQuery, setUploadTransport, type UploadRequest, type UploadResult } from './client'
+import { API_URL, ApiError, isApiUrlMissing, apiFetch, apiUpload, buildQuery, setUploadTransport, type UploadRequest, type UploadResult } from './client'
 import { getSession, resetSessionCache, setSession } from './session'
 
 const json = (status: number, body: unknown) =>
@@ -154,5 +154,17 @@ describe('apiUpload', () => {
     expect(err).toBeInstanceOf(ApiError)
     expect((err as ApiError).message).toBe('Fichier ZIP attendu')
     expect((err as ApiError).status).toBe(400)
+  })
+})
+
+describe('isApiUrlMissing', () => {
+  it('flags a production build without VITE_API_URL', () => {
+    expect(isApiUrlMissing({ PROD: true })).toBe(true)
+    expect(isApiUrlMissing({ PROD: true, VITE_API_URL: '  ' })).toBe(true)
+  })
+  it('is quiet in dev, with a URL, or in the mock build', () => {
+    expect(isApiUrlMissing({ PROD: false })).toBe(false)
+    expect(isApiUrlMissing({ PROD: true, VITE_API_URL: 'https://api.example.com' })).toBe(false)
+    expect(isApiUrlMissing({ PROD: true, VITE_USE_MOCKS: 'true' })).toBe(false)
   })
 })
