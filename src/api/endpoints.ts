@@ -51,6 +51,7 @@ import type {
   LogCallResponse,
   OutcomeCount,
   Page,
+  PasswordChange,
   PipelineEntry,
   ScraperJobDTO,
   StatusUpdateRequest,
@@ -236,3 +237,8 @@ export const discoverOsm = (body: DiscoverRequest, signal?: AbortSignal) =>
 export const importOsm = (candidates: DiscoverCandidate[], assignToMe: boolean) =>
   apiFetch<DiscoverImportResponse>('/api/discover/osm/import', { method: 'POST', body: { candidates, assignToMe } })
 export const setUserTargets = updateUserTargets
+
+// ---- Accounts: password change (self) and reset (ADMIN)
+export const changeMyPassword = (body: PasswordChange) => apiFetch<void>('/api/me/password', { method: 'POST', body })
+export const resetUserPassword = (userId: string, newPassword: string) =>
+  apiFetch<void>(`/api/users/${userId}/password`, { method: 'PUT', body: { newPassword } })

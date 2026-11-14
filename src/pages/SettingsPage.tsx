@@ -29,6 +29,7 @@ import { useToast } from '../components/Toast'
 import { errorMessage } from '../lib/errors'
 import { formatRelative } from '../lib/format'
 import { placeholderKeys } from '../lib/placeholders'
+import AccountTab from './AccountTab'
 import TeamSection from './TeamSection'
 import './settings.css'
 
@@ -37,6 +38,7 @@ const TABS = [
   { key: 'emails', label: 'Modèles de courriel' },
   { key: 'targets', label: 'Objectifs' },
   { key: 'team', label: 'Équipe' },
+  { key: 'account', label: 'Mon compte' },
 ] as const
 type Tab = (typeof TABS)[number]['key']
 
@@ -85,6 +87,7 @@ export default function SettingsPage() {
       {current === 'emails' && <EmailsTab />}
       {current === 'targets' && <TargetsTab />}
       {current === 'team' && isAdmin && <TeamSection />}
+      {current === 'account' && <AccountTab />}
     </div>
   )
 }

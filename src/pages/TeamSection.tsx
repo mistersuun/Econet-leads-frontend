@@ -5,6 +5,7 @@ import type { Role, TeamMember } from '../api/types'
 import { EmptyState, ErrorState, SkeletonRows } from '../components/States'
 import { useToast } from '../components/Toast'
 import { errorMessage } from '../lib/errors'
+import ResetPassword from './ResetPassword'
 
 const ROLE_LABEL: Record<Role, string> = { ADMIN: 'Admin', USER: 'Appelant', VIEWER: 'Lecture' }
 
@@ -98,6 +99,9 @@ function MemberRow({ member }: { member: TeamMember }) {
           </button>
         </div>
       )}
+      <div className="team-reset">
+        <ResetPassword userId={member.id} username={member.username} />
+      </div>
     </li>
   )
 }

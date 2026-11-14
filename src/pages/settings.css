@@ -154,3 +154,19 @@
   .team-row { padding: 12px; }
   .team-edit .field { flex: 1 1 120px; width: auto; }
 }
+
+.account-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px 24px;
+  margin: 12px 0 0;
+}
+.account-facts dd {
+  margin: 2px 0 0;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.team-reset {
+  flex-basis: 100%;
+  margin-top: 8px;
+}
