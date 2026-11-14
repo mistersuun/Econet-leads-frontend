@@ -122,6 +122,12 @@ export function useLiveInvalidate(): void {
       case 'tender.updated':
         invalidate(['tenders'], ['tender-summary'], ['tender', e.data.tenderId], ['notifications'])
         break
+      case 'quote.accepted':
+        invalidate(['quotes', e.data.leadId], ['lead', e.data.leadId], ['leads'], ['contacts', e.data.leadId], ['notifications'], ['summary'], ['pipeline'])
+        break
+      case 'visit.booked':
+        invalidate(['visits'], ['lead', e.data.leadId], ['leads'], ['contacts', e.data.leadId], ['followups'], ['notifications'])
+        break
       default:
         break
     }

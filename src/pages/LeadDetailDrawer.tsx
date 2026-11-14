@@ -7,6 +7,7 @@ import { useAuth } from '../auth/AuthContext'
 import { CallHistory } from '../components/CallHistory'
 import { EmailComposer } from '../components/EmailComposer'
 import { LeadCard } from '../components/LeadCard'
+import { LeadSalesPanel } from '../components/quotes/LeadSalesPanel'
 import { OutcomeForm } from '../components/OutcomeForm'
 import { EmptyState, ErrorState, SkeletonRows } from '../components/States'
 import { useToast } from '../components/Toast'
@@ -234,6 +235,8 @@ export default function LeadDetailDrawer() {
                 <StatusEditor key={`s-${lead.data.leadStatus}`} lead={lead.data} canEdit={canEdit} />
                 <DealEditor key={`d-${lead.data.estimatedValue}-${lead.data.assignedToId}`} lead={lead.data} canEdit={canEdit} />
               </section>
+
+              <LeadSalesPanel lead={lead.data} canEdit={canEdit} />
 
               <section className="card card-pad">
                 <h3 style={{ marginBottom: 16 }}>Historique</h3>

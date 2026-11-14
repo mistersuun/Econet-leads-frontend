@@ -621,7 +621,7 @@ export interface SendEmailResponse {
 
 // ---- Addendum 3: notifications
 
-export type NotificationKind = 'follow_up_due' | 'follow_up_overdue' | 'claim_expired' | 'tender_closing' | 'inbound_request'
+export type NotificationKind = 'follow_up_due' | 'follow_up_overdue' | 'claim_expired' | 'tender_closing' | 'inbound_request' | 'quote_accepted' | 'visit_booked'
 
 export interface AppNotification {
   id: string
@@ -663,6 +663,10 @@ export interface LiveEventMap {
   'tender.updated': { tenderId: string; status: TenderStatus }
   /** Addendum 4: a request arrived from the website. */
   'lead.inbound': { leadId: string; leadName: string; kind: 'booking' | 'contact'; at: string; businessType?: string | null; estimatedValue?: number | null }
+  /** A prospect accepted a quote through its public link. */
+  'quote.accepted': { leadId: string; leadName: string; quoteId: string; total: number }
+  /** A prospect booked a visit through a booking link (startsAt: Montréal wall-clock). */
+  'visit.booked': { leadId: string; leadName: string; startsAt: string }
 }
 
 export type LiveEventType = keyof LiveEventMap
@@ -676,6 +680,8 @@ export const LIVE_EVENT_TYPES: readonly LiveEventType[] = [
   'target.progress',
   'tender.updated',
   'lead.inbound',
+  'quote.accepted',
+  'visit.booked',
 ]
 
 export type LiveEvent = {
@@ -786,4 +792,74 @@ export interface DiscoverImportResponse {
   added: number
   skipped: number
   leads: BusinessDTO[]
+}
+
+// ---- Quotes (soumissions) and visit booking
+
+export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'declined' | 'expired'
+
+export interface QuoteLine {
+  id: string
+  label: string
+  /** Negative for the frequency discount. */
+  amount: number
+}
+
+export interface Quote {
+  id: string
+  leadId: string
+  /** Q-YYYY-NNNN */
+  number: string
+  language: ScriptLanguage
+  input: Record<string, unknown>
+  lines: QuoteLine[]
+  subtotal: number
+  tax: number
+  total: number
+  status: QuoteStatus
+  validUntil: string
+  /** Public page the prospect uses to review and accept. */
+  publicUrl: string
+  pdfUrl: string
+  createdBy?: string | null
+  createdAt: string
+  sentAt?: string | null
+  acceptedAt?: string | null
+  acceptedName?: string | null
+  declineReason?: string | null
+}
+
+export interface CreateQuoteRequest {
+  estimate: EstimateInput
+  language?: ScriptLanguage
+}
+
+/** POST /api/leads/{id}/booking-links: single use, 14 days. */
+export interface BookingLink {
+  url: string
+  expiresAt: string
+}
+
+export type VisitStatus = 'booked' | 'done' | 'cancelled'
+
+export interface Visit {
+  id: string
+  leadId: string
+  leadName: string
+  leadPhone?: string | null
+  leadAddress?: string | null
+  startsAt: string
+  endsAt: string
+  status: VisitStatus
+  bookedVia: 'link' | 'manual'
+}
+
+/** One weekly window of availability (weekday 1 = lundi … 7 = dimanche, times HH:mm, heure de Montréal). */
+export interface AvailabilityWindow {
+  id?: string
+  weekday: number
+  startTime: string
+  endTime: string
+  slotMinutes: number
+  active: boolean
 }

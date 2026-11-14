@@ -1,3 +1,4 @@
+import { UpcomingVisits } from '../components/UpcomingVisits'
 import { useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, type UseQueryResult } from '@tanstack/react-query'
@@ -88,6 +89,10 @@ export default function DashboardPage() {
       </div>
 
       <Bento summary={summary} prev={prevSummary.data} range={range} />
+
+      <div style={{ marginTop: 16 }}>
+        <UpcomingVisits />
+      </div>
 
       <div className="grid dash-grid" style={{ marginTop: 16 }}>
         <ActivityWidget range={range} className="span-8" />
