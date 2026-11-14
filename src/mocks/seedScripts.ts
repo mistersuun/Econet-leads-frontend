@@ -10,8 +10,20 @@ const TITLES: Record<ScriptLanguage, Record<keyof Sections, string>> = {
   en: { opening: 'Opening', questions: 'Questions', objections: 'Objections', closing: 'Closing' },
 }
 
+const VOICEMAIL: Record<ScriptLanguage, { title: string; body: string }> = {
+  fr: {
+    title: 'Message vocal',
+    body: 'Bonjour, ici {{callerName}} de {{companyName}}. Je vous appelle au sujet de l’entretien ménager commercial pour {{businessName}}. On aide des entreprises comme la vôtre à avoir des locaux impeccables sans casse-tête de gestion. Je vais vous rappeler, ou vous pouvez me joindre à ce numéro. Merci et bonne journée!',
+  },
+  en: {
+    title: 'Voicemail',
+    body: 'Hi, this is {{callerName}} from {{companyName}}. I’m calling about commercial cleaning for {{businessName}}. We help businesses like yours keep their premises spotless with no management hassle. I’ll try you again, or you can reach me back at this number. Thank you, have a great day!',
+  },
+}
+
 function sections(language: ScriptLanguage, s: Sections): ScriptSection[] {
-  return (['opening', 'questions', 'objections', 'closing'] as const).map((key) => ({ key, title: TITLES[language][key], body: s[key].trim() }))
+  const main = (['opening', 'questions', 'objections', 'closing'] as const).map((key) => ({ key, title: TITLES[language][key], body: s[key].trim() }))
+  return [...main, { key: 'voicemail' as const, title: VOICEMAIL[language].title, body: VOICEMAIL[language].body }]
 }
 
 const FR_DEFAULT: Sections = {

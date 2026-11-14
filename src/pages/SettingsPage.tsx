@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { WeeklyReportToggle } from '../components/WeeklyReportToggle'
 import {
   createScript,
   getLeadFilters,
@@ -40,7 +41,7 @@ const TABS = [
 ] as const
 type Tab = (typeof TABS)[number]['key']
 
-const SECTION_LABEL: Record<ScriptSectionKey, string> = { opening: 'Ouverture', questions: 'Questions', objections: 'Objections', closing: 'Clôture' }
+const SECTION_LABEL: Record<ScriptSectionKey, string> = { opening: 'Ouverture', questions: 'Questions', objections: 'Objections', closing: 'Clôture', voicemail: 'Message vocal' }
 const PLACEHOLDERS: { key: string; help: string }[] = [
   { key: 'businessName', help: 'nom de l’entreprise' },
   { key: 'city', help: 'ville du lead' },
@@ -84,6 +85,12 @@ export default function SettingsPage() {
       {current === 'scripts' && <ScriptsTab />}
       {current === 'emails' && <EmailsTab />}
       {current === 'targets' && <TargetsTab />}
+      {current === 'targets' && (
+        <section className="stack" style={{ marginTop: 24 }}>
+          <h2>Préférences</h2>
+          <WeeklyReportToggle />
+        </section>
+      )}
       {current === 'team' && isAdmin && <TeamSection />}
     </div>
   )

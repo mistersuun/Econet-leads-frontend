@@ -1,0 +1,30 @@
+.weekly-report {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 640px;
+}
+.weekly-report h3,
+.weekly-report p {
+  margin: 0;
+}
+.weekly-report-note {
+  padding: 10px 12px;
+  border-radius: var(--r-control);
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+.weekly-report-preview {
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-control);
+  padding: 12px;
+  background: var(--surface);
+}
+.weekly-report-preview pre {
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font: inherit;
+  font-size: var(--text-md);
+  line-height: 1.5;
+}

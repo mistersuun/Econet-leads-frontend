@@ -58,6 +58,8 @@ import type {
   TenderListParams,
   TenderSummary,
   TenderUpdateRequest,
+  UserPreferences,
+  WeeklyReportPreview,
 } from './types'
 
 // ---- Auth
@@ -236,3 +238,9 @@ export const discoverOsm = (body: DiscoverRequest, signal?: AbortSignal) =>
 export const importOsm = (candidates: DiscoverCandidate[], assignToMe: boolean) =>
   apiFetch<DiscoverImportResponse>('/api/discover/osm/import', { method: 'POST', body: { candidates, assignToMe } })
 export const setUserTargets = updateUserTargets
+
+// ---- Weekly coaching email and preferences
+export const getMyPreferences = () => apiFetch<UserPreferences>('/api/me/preferences')
+export const updateMyPreferences = (body: UserPreferences) => apiFetch<UserPreferences>('/api/me/preferences', { method: 'PUT', body })
+export const previewWeeklyReport = () => apiFetch<WeeklyReportPreview>('/api/reports/weekly/preview', { method: 'POST' })
+export const sendWeeklyReportNow = () => apiFetch<{ status: string }>('/api/reports/weekly/send-now', { method: 'POST' })

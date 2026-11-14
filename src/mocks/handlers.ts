@@ -17,6 +17,7 @@ import { CALL_OUTCOMES, LEAD_STATUSES, TENDER_SOURCES, TENDER_STATUSES } from '.
 import { CONVERSATION_OUTCOMES, TERMINAL, applyCall, createDb, parseLocal, queueFor, startOfDay, type Db } from './db'
 import { broadcastPresence, emitProgress, handle3 } from './handlers3'
 import { handle4, progressImportJobs } from './handlers4'
+import { handleP4 } from './handlersP4'
 import { HttpError, type Req, type Result } from './http'
 import { emit } from './live'
 import { USERS, isoLocal, makeLead, mockId, type MockUser } from './seed'
@@ -235,6 +236,8 @@ export function handle(req: Req): Result {
   // Addendum 4 first: `/api/businesses/duplicates` would otherwise be read as a lead id.
   const r4 = handle4(req, d, user, now)
   if (r4) return r4
+  const rP4 = handleP4(req, d, user, now)
+  if (rP4) return rP4
 
   if (method === 'GET' && path === '/api/auth/me') {
     return { json: { userId: user.userId, username: user.username, email: user.email, role: user.role } }
@@ -339,6 +342,7 @@ export function handle(req: Req): Result {
     const body = (req.body ?? {}) as LogCallRequest
     if (!body.outcome || !CALL_OUTCOMES.includes(body.outcome)) throw new HttpError(400, 'Résultat d’appel requis', { outcome: 'Requis' })
     if (body.durationSeconds !== undefined && (!Number.isFinite(body.durationSeconds) || body.durationSeconds < 0)) throw new HttpError(400, 'Durée invalide', { durationSeconds: 'Nombre de secondes attendu' })
+    if (body.objections && (body.objections.length > 5 || body.objections.some((o) => o.length > 80))) throw new HttpError(400, 'Objections invalides (5 au plus, 80 caractères chacune)', { objections: 'Trop long ou trop nombreux' })
     const held = d.claims.get(lead.id)?.userId === user.userId
     const contact = applyCall(d, lead, user, body, now)
     emit('call.logged', { contactId: contact.id, leadId: lead.id, leadName: lead.businessName, userId: user.userId, username: user.username, outcome: body.outcome, durationSeconds: contact.durationSeconds ?? null, at: contact.contactDate })

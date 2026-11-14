@@ -6,7 +6,9 @@ export interface ToastOptions {
   /** Stays until dismissed (or the action is taken). */
   sticky?: boolean
   /** A button inside the toast, e.g. "Appeler". */
-  action?: { label: string; onClick: () => void }
+  action?: { label: string; onClick: () => void; /** Phone icon in front of the label (default true). */ icon?: boolean }
+  /** Auto-dismiss delay in ms (default 3.2 s, 6 s for errors). */
+  durationMs?: number
 }
 
 interface Toast {
@@ -27,7 +29,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     const id = nextId.current++
     // Sticky toasts are never pushed out by transient ones.
     setToasts((t) => [...t.filter((x) => x.opts?.sticky), ...t.filter((x) => !x.opts?.sticky).slice(-2), { id, kind, message, opts }].sort((a, b) => a.id - b.id))
-    if (!opts?.sticky) setTimeout(() => dismiss(id), kind === 'error' ? 6000 : 3200)
+    if (!opts?.sticky) setTimeout(() => dismiss(id), opts?.durationMs ?? (kind === 'error' ? 6000 : 3200))
   }, [dismiss])
 
   const value = useMemo(() => push, [push])
@@ -48,7 +50,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   dismiss(t.id)
                 }}
               >
-                <IconPhone size={14} /> {t.opts.action.label}
+                {t.opts.action.icon !== false && <IconPhone size={14} />} {t.opts.action.label}
               </button>
             )}
             {t.opts?.sticky && (

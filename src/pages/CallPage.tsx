@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError } from '../api/client'
-import { claimLead, getContacts, getLead, getMyToday, getQueue, patchQualification, releaseLead, snoozeLead } from '../api/endpoints'
-import type { BusinessDTO, LogCallRequest, LogCallResponse, Qualification, ScriptLanguage } from '../api/types'
+import { claimLead, getContacts, getLead, getMyToday, getQueue, getScript, logCall, patchQualification, releaseLead, snoozeLead } from '../api/endpoints'
+import type { BusinessDTO, CallOutcome, LogCallRequest, LogCallResponse, Qualification, ScriptLanguage } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { CallHistory } from '../components/CallHistory'
 import { EmailComposer } from '../components/EmailComposer'
@@ -13,6 +13,7 @@ import { EmptyState, ErrorState, Skeleton, SkeletonRows } from '../components/St
 import { useToast } from '../components/Toast'
 import { OpenNow, SnoozeMenu } from '../components/call/OpenNow'
 import { QualificationForm } from '../components/call/QualificationForm'
+import { QuickOutcomeSheet } from '../components/call/QuickOutcomeSheet'
 import { COMPANY_NAME, ScriptPanel } from '../components/call/ScriptPanel'
 import { TodayRing } from '../components/call/TodayRing'
 import { SessionBar } from '../components/session/SessionBar'
@@ -20,6 +21,7 @@ import { SessionModal } from '../components/session/SessionModal'
 import { SessionSummary } from '../components/session/SessionSummary'
 import { useAddLead } from '../components/AddLead'
 import { IconCheck, IconChevronDown, IconPlus, IconChevronUp, IconMail, IconPhone, IconPlay, IconRefresh, IconScript, IconSkip, IconX } from '../components/icons'
+import { useCallReturn, isTouchCallingDevice } from '../hooks/useCallReturn'
 import { useCallTimer } from '../hooks/useCallTimer'
 import { useLiveEvent } from '../live/LiveProvider'
 import {
@@ -32,15 +34,22 @@ import {
   recordSkip,
   resumeSession,
   saveSession,
+  undoCall,
   sessionQueueParams,
   type CallSession,
 } from '../lib/callSession'
+import { applyLoggedCall } from '../lib/callLogging'
 import { errorMessage } from '../lib/errors'
+import { objectionChips } from '../lib/objections'
+import { QUICK_LABEL, type DetailedChoice, type QuickOutcome } from '../lib/quickOutcomes'
+import { substitutePlaceholders } from '../lib/placeholders'
 import { formatDateTime, toApiDateTime } from '../lib/format'
 import './call.css'
 
 const QUEUE_SIZE = 20
 const CLAIM_REFRESH_MS = 4 * 60_000
+/** One-tap outcomes are sent after this delay so the caller can still undo them. */
+const UNDO_MS = 5000
 
 function useMediaQuery(query: string): boolean {
   const [match, setMatch] = useState(() => (typeof window !== 'undefined' ? window.matchMedia(query).matches : false))
@@ -160,6 +169,84 @@ export default function CallPage() {
       } else setSession(next)
     }
   }
+  // ---- one-tap outcomes: advance now, send after UNDO_MS unless undone (or the page is hidden / closed).
+  const sessionRef = useRef(session)
+  useEffect(() => {
+    sessionRef.current = session
+  })
+  const pendingLogs = useRef(new Map<string, { timer: ReturnType<typeof setTimeout>; send: () => void }>())
+  const flushPending = useCallback(() => {
+    for (const p of [...pendingLogs.current.values()]) {
+      clearTimeout(p.timer)
+      p.send()
+    }
+  }, [])
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') flushPending()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('pagehide', flushPending)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('pagehide', flushPending)
+      flushPending()
+    }
+  }, [flushPending])
+
+  const quickLog = (target: BusinessDTO, outcome: CallOutcome, durationSeconds: number | null) => {
+    const req: LogCallRequest = { outcome, durationSeconds: durationSeconds ?? undefined }
+    const leadId = target.id
+    const un = () => {
+      setHandled((s) => {
+        const n = new Set(s)
+        n.delete(leadId)
+        return n
+      })
+      const cur = sessionRef.current
+      if (cur) setSession(undoCall(cur, leadId))
+    }
+    advance(leadId, 'handled')
+    if (session) {
+      const next = recordCall(session, { leadId, leadName: target.businessName, outcome, durationSeconds, at: Date.now() })
+      if (next.calls.length >= next.size) {
+        setSession(null)
+        setSummary(endSession(next))
+        toast('Session terminée — beau travail!')
+      } else setSession(next)
+    }
+    const send = () => {
+      pendingLogs.current.delete(leadId)
+      logCall(leadId, req).then(
+        (res) => applyLoggedCall(qc, res),
+        (e: unknown) => {
+          toast(`${target.businessName} : ${errorMessage(e)}`, 'error')
+          un()
+        },
+      )
+    }
+    pendingLogs.current.set(leadId, { timer: setTimeout(send, UNDO_MS), send })
+    const label = outcome in QUICK_LABEL ? QUICK_LABEL[outcome as QuickOutcome] : outcome
+    toast(`${label} — ${target.businessName}`, 'success', {
+      durationMs: UNDO_MS,
+      action: {
+        label: 'Annuler',
+        icon: false,
+        onClick: () => {
+          const p = pendingLogs.current.get(leadId)
+          if (!p) {
+            toast('Déjà enregistré : corrigez-le dans l’historique du lead.', 'info')
+            return
+          }
+          clearTimeout(p.timer)
+          pendingLogs.current.delete(leadId)
+          un()
+          toast('Appel annulé', 'info')
+        },
+      },
+    })
+  }
+
   const onSkip = (id: string) => {
     advance(id, 'skipped')
     if (session) setSession(recordSkip(session, id))
@@ -270,6 +357,7 @@ export default function CallPage() {
           paused={!!session?.pausedAt}
           callerName={user?.username ?? ''}
           onLogged={onLogged}
+          onQuickLog={quickLog}
           onSkip={() => onSkip(lead.id)}
           onClaimConflict={() => onSkip(lead.id)}
           onSnoozed={() => onSkip(lead.id)}
@@ -290,12 +378,13 @@ interface ActiveProps {
   paused: boolean
   callerName: string
   onLogged: (res: LogCallResponse, durationSeconds: number | null) => void
+  onQuickLog: (lead: BusinessDTO, outcome: CallOutcome, durationSeconds: number | null) => void
   onSkip: () => void
   onClaimConflict: () => void
   onSnoozed: () => void
 }
 
-function ActiveLead({ lead, readOnly, paused, callerName, onLogged, onSkip, onClaimConflict, onSnoozed }: ActiveProps) {
+function ActiveLead({ lead, readOnly, paused, callerName, onLogged, onQuickLog, onSkip, onClaimConflict, onSnoozed }: ActiveProps) {
   const qc = useQueryClient()
   const toast = useToast()
   const narrow = useMediaQuery('(max-width: 1080px)')
@@ -304,6 +393,10 @@ function ActiveLead({ lead, readOnly, paused, callerName, onLogged, onSkip, onCl
   const [composer, setComposer] = useState(false)
   const [scriptSheet, setScriptSheet] = useState(false)
   const [qualOpen, setQualOpen] = useState(!narrow)
+  // One-tap outcomes (phones and touch devices): the sheet opens when the page is visible again after the call.
+  const [touch] = useState(isTouchCallingDevice)
+  const [quickOpen, setQuickOpen] = useState(false)
+  const [preset, setPreset] = useState<{ outcome: CallOutcome | null; nonce: number } | null>(null)
 
   const contacts = useQuery({ queryKey: ['contacts', lead.id], queryFn: () => getContacts(lead.id) })
 
@@ -386,7 +479,25 @@ function ActiveLead({ lead, readOnly, paused, callerName, onLogged, onSkip, onCl
   }
 
   const disabled = readOnly || paused
+
+  useCallReturn(touch && !disabled && timer.running, () => {
+    durationRef.current = timer.stop()
+    setQuickOpen(true)
+  })
+  const chooseQuick = (outcome: QuickOutcome) => {
+    setQuickOpen(false)
+    onQuickLog(lead, outcome, durationRef.current)
+  }
+  const chooseDetailed = (choice: DetailedChoice) => {
+    setQuickOpen(false)
+    setPreset({ outcome: choice === 'CALLBACK' ? 'CALLBACK' : null, nonce: (preset?.nonce ?? 0) + 1 })
+  }
+  const script = useQuery({ queryKey: ['script', lead.businessType, language], queryFn: () => getScript(lead.businessType, language), staleTime: 5 * 60_000 })
+  const objectionOptions = objectionChips(script.data?.sections.find((s) => s.key === 'objections')?.body)
   const placeholders = { businessName: lead.businessName, city: lead.addressCity, callerName, companyName: COMPANY_NAME, decisionMaker: qual.decisionMaker }
+
+  const voicemailBody = script.data?.sections.find((s) => s.key === 'voicemail')?.body
+  const voicemailText = voicemailBody ? substitutePlaceholders(voicemailBody, placeholders, { decisionMaker: language === 'fr' ? 'madame, monsieur' : 'there', city: language === 'fr' ? 'votre secteur' : 'your area' }) : undefined
 
   const history = contacts.isPending ? (
     <SkeletonRows rows={3} />
@@ -448,6 +559,9 @@ function ActiveLead({ lead, readOnly, paused, callerName, onLogged, onSkip, onCl
                 disabled={disabled}
                 shortcuts
                 compact
+                objectionOptions={objectionOptions}
+                voicemailText={voicemailText}
+                preset={preset}
                 submitLabel="Enregistrer et suivant"
                 extras={() => ({ durationSeconds: durationRef.current ?? (timer.started ? timer.elapsed : undefined) ?? undefined, qualification: dirtyQualification() })}
                 onOutcomeChosen={() => {
@@ -500,6 +614,9 @@ function ActiveLead({ lead, readOnly, paused, callerName, onLogged, onSkip, onCl
               disabled={disabled}
               shortcuts={!composer}
               compact
+              objectionOptions={objectionOptions}
+              voicemailText={voicemailText}
+              preset={preset}
               submitLabel="Enregistrer et suivant"
               extras={() => ({ durationSeconds: durationRef.current ?? (timer.started ? timer.elapsed : undefined) ?? undefined, qualification: dirtyQualification() })}
               onOutcomeChosen={() => {
@@ -534,6 +651,8 @@ function ActiveLead({ lead, readOnly, paused, callerName, onLogged, onSkip, onCl
           </div>
         </>
       )}
+
+      {quickOpen && <QuickOutcomeSheet leadName={lead.businessName} durationSeconds={timer.elapsed || null} onQuick={chooseQuick} onDetailed={chooseDetailed} onClose={() => setQuickOpen(false)} />}
 
       {composer && (
         <EmailComposer
