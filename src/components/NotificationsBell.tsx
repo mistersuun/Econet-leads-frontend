@@ -14,6 +14,7 @@ const KIND_LABEL: Record<AppNotification['kind'], string> = {
   claim_expired: 'Réservation expirée',
   tender_closing: 'Appel d’offres',
   inbound_request: 'Demande du site',
+  saved_search: 'Recherche enregistrée',
 }
 const KIND_COLOR: Record<AppNotification['kind'], string> = {
   follow_up_due: '#c98a1f',
@@ -21,6 +22,7 @@ const KIND_COLOR: Record<AppNotification['kind'], string> = {
   claim_expired: '#a1a1a6',
   tender_closing: '#4a72b0',
   inbound_request: '#8a5fa8',
+  saved_search: '#4a8f7a',
 }
 
 type Permission = 'default' | 'granted' | 'denied' | 'unsupported'
@@ -160,7 +162,7 @@ export function NotificationsBell({ compact = false }: { compact?: boolean }) {
                       <button
                         type="button"
                         className="btn btn-ghost btn-sm"
-                        onClick={() => go(n.leadId ? `/leads/${n.leadId}` : n.tenderId ? `/tenders/${n.tenderId}` : '/follow-ups')}
+                        onClick={() => go(n.leadId ? `/leads/${n.leadId}` : n.tenderId ? `/tenders/${n.tenderId}` : n.kind === 'saved_search' ? '/discover' : '/follow-ups')}
                       >
                         Ouvrir
                       </button>

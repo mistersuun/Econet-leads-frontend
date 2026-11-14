@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ApiError } from '../api/client'
 import { discoverOsm, importOsm } from '../api/endpoints'
 import type { DiscoverCandidate, DiscoverCategory, DiscoverResponse } from '../api/types'
+import { SaveSearchPanel, SavedSearchList } from '../components/SavedSearches'
 import { EmptyState, SkeletonRows } from '../components/States'
 import { useToast } from '../components/Toast'
 import { IconAlert, IconSearch } from '../components/icons'
@@ -119,6 +120,7 @@ export default function DiscoverPage() {
             ))}
           </div>
         </div>
+        <SaveSearchPanel city={city} categories={cats} maxResults={limit} />
       </form>
 
       <section className="card discover-results" aria-live="polite">
@@ -214,6 +216,8 @@ export default function DiscoverPage() {
           </button>
         </div>
       )}
+
+      <SavedSearchList />
 
       <p className="attribution xs muted">Données © OpenStreetMap contributors</p>
     </div>

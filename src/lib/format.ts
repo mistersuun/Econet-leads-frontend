@@ -110,3 +110,8 @@ export function formatBytes(bytes: number | null | undefined): string {
   const digits = i === 0 || v >= 100 ? 0 : 1
   return nbsp(`${new Intl.NumberFormat('fr-CA', { maximumFractionDigits: digits }).format(v)} ${units[i]}`)
 }
+
+/** "4,3": a Google rating with a French decimal comma. */
+export function formatRating(rating: number): string {
+  return rating.toFixed(1).replace('.', ',')
+}

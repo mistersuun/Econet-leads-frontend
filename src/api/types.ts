@@ -107,6 +107,8 @@ export interface BusinessDTO {
   qualification?: Qualification | null
   /** Addendum 3: who holds the claim on this lead right now (queue items). */
   claimedBy?: { userId: string; username: string } | null
+  /** Google data (rating, reviews, hours...), absent when the lead was never enriched. */
+  places?: PlacesData | null
 }
 
 // ---- Addendum 3: qualification
@@ -621,7 +623,7 @@ export interface SendEmailResponse {
 
 // ---- Addendum 3: notifications
 
-export type NotificationKind = 'follow_up_due' | 'follow_up_overdue' | 'claim_expired' | 'tender_closing' | 'inbound_request'
+export type NotificationKind = 'follow_up_due' | 'follow_up_overdue' | 'claim_expired' | 'tender_closing' | 'inbound_request' | 'saved_search'
 
 export interface AppNotification {
   id: string
@@ -786,4 +788,66 @@ export interface DiscoverImportResponse {
   added: number
   skipped: number
   leads: BusinessDTO[]
+}
+
+// ---- Google Places enrichment and saved searches
+
+export interface PlacesSignal {
+  text: string
+  rating: number | null
+  publishedAt: string | null
+}
+
+/**
+ * Google data stored on a lead. After 30 days only `placeId` and `fetchedAt` remain and
+ * `expired` is true (Google's caching terms): the other fields are then absent.
+ */
+export interface PlacesData {
+  placeId: string | null
+  rating?: number | null
+  reviewCount?: number | null
+  mapsUrl?: string | null
+  website?: string | null
+  phone?: string | null
+  openingHours?: string[]
+  businessStatus?: string | null
+  cleanlinessSignals?: PlacesSignal[]
+  fetchedAt: string
+  expired?: boolean
+}
+
+export interface PlacesStatus {
+  configured: boolean
+  usedToday: number
+  dailyLimit: number
+  attribution: string
+}
+
+export type SavedSearchFrequency = 'monthly' | 'weekly'
+
+export interface SavedSearch {
+  id: string
+  name: string
+  city: string
+  categories: DiscoverCategory[]
+  maxResults: number
+  frequency: SavedSearchFrequency
+  assignToUserId: string | null
+  assignToName: string | null
+  active: boolean
+  lastRunAt: string | null
+  lastAdded: number | null
+  nextRunAt: string | null
+  createdByName: string | null
+  createdAt: string
+}
+
+export interface SavedSearchInput {
+  name: string
+  city: string
+  categories: DiscoverCategory[]
+  maxResults?: number
+  frequency: SavedSearchFrequency
+  assignToUserId?: string | null
+  active?: boolean
 }
