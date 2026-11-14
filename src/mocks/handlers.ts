@@ -17,6 +17,7 @@ import { CALL_OUTCOMES, LEAD_STATUSES, TENDER_SOURCES, TENDER_STATUSES } from '.
 import { CONVERSATION_OUTCOMES, TERMINAL, applyCall, createDb, parseLocal, queueFor, startOfDay, type Db } from './db'
 import { broadcastPresence, emitProgress, handle3 } from './handlers3'
 import { handle4, progressImportJobs } from './handlers4'
+import { handle5 } from './handlers5'
 import { HttpError, type Req, type Result } from './http'
 import { emit } from './live'
 import { USERS, isoLocal, makeLead, mockId, type MockUser } from './seed'
@@ -235,6 +236,8 @@ export function handle(req: Req): Result {
   // Addendum 4 first: `/api/businesses/duplicates` would otherwise be read as a lead id.
   const r4 = handle4(req, d, user, now)
   if (r4) return r4
+  const r5 = handle5(req, d, user, now)
+  if (r5) return r5
 
   if (method === 'GET' && path === '/api/auth/me') {
     return { json: { userId: user.userId, username: user.username, email: user.email, role: user.role } }

@@ -1,0 +1,129 @@
+.cl-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 24px;
+  margin-bottom: 16px;
+}
+.cl-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.cl-figure {
+  font-size: 34px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.cl-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.cl-search {
+  flex: 1 1 220px;
+  max-width: 320px;
+}
+.cl-freq {
+  width: auto;
+  min-width: 190px;
+}
+.cl-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-md);
+  color: var(--ink-2);
+}
+.cl-renewal {
+  white-space: nowrap;
+}
+.cl-cards {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.cl-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border-bottom: 1px solid var(--hairline);
+  color: inherit;
+  text-decoration: none;
+}
+.cl-cards li:last-child .cl-card {
+  border-bottom: 0;
+}
+.cl-card-top,
+.cl-card-bottom {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cl-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.cl-form {
+  gap: 16px;
+}
+.cl-notice {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: var(--r-control);
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+.tile-clients {
+  margin-top: 16px;
+}
+.tile-clients-figures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+.tile-clients-figures > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .cl-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .cl-table {
+    display: none;
+  }
+  .cl-cards {
+    display: block;
+  }
+  .cl-two {
+    grid-template-columns: 1fr;
+  }
+  .cl-figure {
+    font-size: 28px;
+  }
+  .cl-search {
+    max-width: none;
+    flex-basis: 100%;
+  }
+  .cl-freq {
+    flex: 1 1 100%;
+  }
+  .tile-clients-figures {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+}

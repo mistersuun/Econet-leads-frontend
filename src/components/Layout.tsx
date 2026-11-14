@@ -12,6 +12,7 @@ import { SkeletonRows } from './States'
 import { TeamPresence } from './TeamPresence'
 import { useToast } from './Toast'
 import {
+  IconBriefcase,
   IconCalendarClock,
   IconCompass,
   IconDashboard,
@@ -100,6 +101,7 @@ function LayoutShell() {
     { to: '/leads', label: 'Leads', short: 'Leads', icon: IconUsers, tab: true },
     { to: '/follow-ups', label: 'Suivis', short: 'Suivis', icon: IconCalendarClock, badge: overdue, tab: true },
     { to: '/tenders', label: 'Appels d’offres', short: 'Offres', icon: IconFileText },
+    { to: '/clients', label: 'Clients', short: 'Clients', icon: IconBriefcase },
     ...(hasRole('ADMIN', 'USER')
       ? [
           { to: '/import', label: 'Importer', short: 'Importer', icon: IconUpload },
