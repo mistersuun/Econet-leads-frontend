@@ -14,6 +14,7 @@ const TABS: { key: ScriptSectionKey; label: string; hotkey: string }[] = [
   { key: 'questions', label: 'Questions', hotkey: 'q' },
   { key: 'objections', label: 'Objections', hotkey: 'b' },
   { key: 'closing', label: 'Clôture', hotkey: 'c' },
+  { key: 'voicemail', label: 'Message vocal', hotkey: 'v' },
 ]
 
 interface Props {
@@ -21,7 +22,7 @@ interface Props {
   language: ScriptLanguage
   onLanguageChange: (l: ScriptLanguage) => void
   values: PlaceholderValues
-  /** Window-level O/Q/B/C shortcuts (off while the panel is hidden). */
+  /** Window-level O/Q/B/C/V shortcuts (off while the panel is hidden). */
   hotkeys?: boolean
 }
 

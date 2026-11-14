@@ -231,6 +231,7 @@ export function applyCall(db: Db, lead: BusinessDTO, user: MockUser, req: LogCal
     outcome: req.outcome,
     createdAt: nowIso,
     durationSeconds: req.durationSeconds ?? null,
+    objections: req.objections?.length ? req.objections.slice(0, 5) : null,
   }
   db.contacts.push(contact)
   db.claims.delete(lead.id)

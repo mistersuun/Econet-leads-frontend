@@ -213,6 +213,8 @@ export interface ContactDTO {
   createdAt: string
   /** Addendum 3: call length, when the caller used the timer. */
   durationSeconds?: number | null
+  /** Objections heard on the call (at most 5, each at most 80 characters). */
+  objections?: string[] | null
 }
 
 export interface LogCallRequest {
@@ -223,6 +225,8 @@ export interface LogCallRequest {
   estimatedValue?: number
   /** Addendum 3 */
   durationSeconds?: number
+  /** At most 5 short strings (80 characters each). */
+  objections?: string[]
   qualification?: Qualification
   /** Only for NO_ANSWER / VOICEMAIL / CALLBACK: sets nextFollowUpAt without changing status. */
   snoozeUntil?: string
@@ -436,8 +440,8 @@ export interface TenderSummary {
 
 // ---- Addendum 3: scripts
 
-export type ScriptSectionKey = 'opening' | 'questions' | 'objections' | 'closing'
-export const SCRIPT_SECTION_KEYS: readonly ScriptSectionKey[] = ['opening', 'questions', 'objections', 'closing']
+export type ScriptSectionKey = 'opening' | 'questions' | 'objections' | 'closing' | 'voicemail'
+export const SCRIPT_SECTION_KEYS: readonly ScriptSectionKey[] = ['opening', 'questions', 'objections', 'closing', 'voicemail']
 
 export interface ScriptSection {
   key: ScriptSectionKey
@@ -888,4 +892,15 @@ export interface SavedSearchInput {
   frequency: SavedSearchFrequency
   assignToUserId?: string | null
   active?: boolean
+}
+
+// ---- Weekly coaching email
+export interface UserPreferences {
+  weeklyReport: boolean
+}
+
+export interface WeeklyReportPreview {
+  subject: string
+  text: string
+  html: string
 }

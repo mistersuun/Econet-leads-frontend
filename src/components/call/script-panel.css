@@ -114,3 +114,8 @@
     display: none;
   }
 }
+
+.script-head .segmented {
+  max-width: 100%;
+  overflow-x: auto;
+}

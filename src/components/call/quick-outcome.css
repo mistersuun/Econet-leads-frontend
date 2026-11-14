@@ -1,0 +1,66 @@
+.quick-outcome {
+  max-height: 90dvh;
+  overflow-y: auto;
+}
+.quick-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.quick-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.quick-title strong {
+  font-size: var(--text-lg);
+}
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.quick-btn {
+  min-height: 68px;
+  padding: 10px 12px;
+  border-radius: var(--r-control);
+  border: 1px solid var(--hairline-strong);
+  background: var(--card);
+  color: var(--ink);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.1s, border-color 0.1s;
+}
+.quick-btn:hover {
+  background: #fafafa;
+}
+.quick-btn:active {
+  background: var(--fill-strong);
+}
+.quick-btn.emphasis {
+  background: var(--mint);
+  border-color: var(--mint-strong);
+}
+.quick-btn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.quick-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.quick-hint {
+  margin: 12px 0 0;
+}
+@media (min-width: 701px) {
+  .quick-outcome {
+    width: min(480px, 100%);
+    margin: 0 auto;
+  }
+}

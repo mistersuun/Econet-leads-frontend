@@ -222,3 +222,9 @@ export function saveSession(s: CallSession | null): void {
     /* storage unavailable */
   }
 }
+
+/** Removes the most recent call recorded for a lead (undo of a one-tap outcome). */
+export function undoCall(s: CallSession, leadId: string): CallSession {
+  const i = s.calls.map((c) => c.leadId).lastIndexOf(leadId)
+  return i < 0 ? s : { ...s, calls: s.calls.filter((_, k) => k !== i) }
+}

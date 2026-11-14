@@ -32,6 +32,7 @@ export function CallHistory({ contacts, compact }: { contacts: ContactDTO[]; com
               </div>
             )}
             {c.notes && <p className={`tl-notes${c.contactType === 'EMAIL' ? ' tl-email' : ''}`}>{c.notes}</p>}
+            {c.objections && c.objections.length > 0 && <p className="tl-notes xs muted">Objections : {c.objections.join(', ')}</p>}
             {c.nextActionDate && (
               <div className="xs muted row" style={{ gap: 4 }}>
                 <IconCalendarClock size={13} /> {c.nextAction ?? 'Suivi'} · {formatDateTime(c.nextActionDate)}

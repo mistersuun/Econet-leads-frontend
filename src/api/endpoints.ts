@@ -59,6 +59,8 @@ import type {
   TenderListParams,
   TenderSummary,
   TenderUpdateRequest,
+  UserPreferences,
+  WeeklyReportPreview,
 } from './types'
 import type { IntegrationsStatus, SendSmsRequest, SmsTemplateKey, TestAlertResult } from './types'
 
@@ -264,3 +266,9 @@ export const updateSavedSearch = (id: string, body: SavedSearchInput) =>
   apiFetch<SavedSearch>(`/api/saved-searches/${id}`, { method: 'PUT', body })
 export const deleteSavedSearch = (id: string) => apiFetch<void>(`/api/saved-searches/${id}`, { method: 'DELETE' })
 export const runSavedSearch = (id: string) => apiFetch<ScraperJobDTO>(`/api/saved-searches/${id}/run`, { method: 'POST' })
+
+// ---- Weekly coaching email and preferences
+export const getMyPreferences = () => apiFetch<UserPreferences>('/api/me/preferences')
+export const updateMyPreferences = (body: UserPreferences) => apiFetch<UserPreferences>('/api/me/preferences', { method: 'PUT', body })
+export const previewWeeklyReport = () => apiFetch<WeeklyReportPreview>('/api/reports/weekly/preview', { method: 'POST' })
+export const sendWeeklyReportNow = () => apiFetch<{ status: string }>('/api/reports/weekly/send-now', { method: 'POST' })
