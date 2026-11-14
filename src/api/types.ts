@@ -787,3 +787,9 @@ export interface DiscoverImportResponse {
   skipped: number
   leads: BusinessDTO[]
 }
+
+// ---- Accounts (P1)
+export interface PasswordChange {
+  currentPassword: string
+  newPassword: string
+}
