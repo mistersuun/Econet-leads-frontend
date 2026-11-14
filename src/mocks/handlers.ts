@@ -21,6 +21,7 @@ import { handleAccounts } from './handlersAccounts'
 import { handleSms } from './handlersSms'
 import { handlePlaces } from './handlersPlaces'
 import { handleP4 } from './handlersP4'
+import { handleQuotes } from './handlersQuotes'
 import { HttpError, type Req, type Result } from './http'
 import { emit } from './live'
 import { USERS, isoLocal, makeLead, mockId, type MockUser } from './seed'
@@ -248,6 +249,8 @@ export function handle(req: Req): Result {
   if (rPlaces) return rPlaces
   const rP4 = handleP4(req, d, user, now)
   if (rP4) return rP4
+  const rQuotes = handleQuotes(req, d, user, now)
+  if (rQuotes) return rQuotes
 
   if (method === 'GET' && path === '/api/auth/me') {
     return { json: { userId: user.userId, username: user.username, email: user.email, role: user.role } }

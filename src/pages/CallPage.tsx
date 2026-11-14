@@ -8,6 +8,7 @@ import { useAuth } from '../auth/AuthContext'
 import { CallHistory } from '../components/CallHistory'
 import { EmailComposer } from '../components/EmailComposer'
 import { SmsFollowUpSheet, type SmsLead } from '../components/SmsFollowUpSheet'
+import { LeadSalesPanel } from '../components/quotes/LeadSalesPanel'
 import { LeadCard } from '../components/LeadCard'
 import { OutcomeForm } from '../components/OutcomeForm'
 import { EmptyState, ErrorState, Skeleton, SkeletonRows } from '../components/States'
@@ -417,6 +418,7 @@ function ActiveLead({ lead, readOnly, paused, callerName, onLogged, onQuickLog, 
   const [touch] = useState(isTouchCallingDevice)
   const [quickOpen, setQuickOpen] = useState(false)
   const [preset, setPreset] = useState<{ outcome: CallOutcome | null; nonce: number } | null>(null)
+  const [salesOpen, setSalesOpen] = useState(false)
 
   const contacts = useQuery({ queryKey: ['contacts', lead.id], queryFn: () => getContacts(lead.id) })
 
@@ -612,6 +614,19 @@ function ActiveLead({ lead, readOnly, paused, callerName, onLogged, onQuickLog, 
             {qualOpen && (
               <div className="card-pad" style={{ paddingTop: 0 }}>
                 <QualificationForm value={qual} disabled={readOnly} onChange={(patch) => setQual((q) => ({ ...q, ...patch }))} onCommit={commit} />
+              </div>
+            )}
+          </div>
+
+          <div className="card call-qual-card">
+            <button type="button" className="call-section-toggle" aria-expanded={salesOpen} onClick={() => setSalesOpen((o) => !o)}>
+              <span>Soumission et visite</span>
+              <span className="xs muted">devis, PDF, lien de réservation</span>
+              <IconChevronDown size={16} className={salesOpen ? 'open' : undefined} />
+            </button>
+            {salesOpen && (
+              <div className="card-pad" style={{ paddingTop: 0 }}>
+                <LeadSalesPanel lead={lead} canEdit={!readOnly} />
               </div>
             )}
           </div>

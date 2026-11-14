@@ -31,6 +31,7 @@ import { errorMessage } from '../lib/errors'
 import { formatRelative } from '../lib/format'
 import { placeholderKeys } from '../lib/placeholders'
 import AccountTab from './AccountTab'
+import AvailabilitySection from './AvailabilitySection'
 import TeamSection from './TeamSection'
 import IntegrationsSection from './IntegrationsSection'
 import './settings.css'
@@ -42,6 +43,7 @@ const TABS = [
   { key: 'team', label: 'Équipe' },
   { key: 'account', label: 'Mon compte' },
   { key: 'integrations', label: 'Intégrations' },
+  { key: 'availability', label: 'Disponibilités' },
 ] as const
 type Tab = (typeof TABS)[number]['key']
 
@@ -65,7 +67,7 @@ export default function SettingsPage() {
   const navigate = useNavigate()
   const { hasRole } = useAuth()
   const isAdmin = hasRole('ADMIN')
-  const tabs = TABS.filter((t) => (t.key !== 'team' && t.key !== 'integrations') || isAdmin)
+  const tabs = TABS.filter((t) => (t.key !== 'team' && t.key !== 'integrations' && t.key !== 'availability') || isAdmin)
   const current: Tab = (tabs.find((t) => t.key === tab)?.key ?? 'scripts') as Tab
   useEffect(() => {
     if (!tab) navigate('/settings/scripts', { replace: true })
@@ -98,6 +100,7 @@ export default function SettingsPage() {
       {current === 'team' && isAdmin && <TeamSection />}
       {current === 'account' && <AccountTab />}
       {current === 'integrations' && isAdmin && <IntegrationsSection />}
+      {current === 'availability' && isAdmin && <AvailabilitySection />}
     </div>
   )
 }

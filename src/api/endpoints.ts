@@ -64,6 +64,8 @@ import type {
 } from './types'
 import type { IntegrationsStatus, SendSmsRequest, SmsTemplateKey, TestAlertResult } from './types'
 
+import type { AvailabilityWindow, BookingLink, CreateQuoteRequest, Quote, Visit, VisitStatus } from './types'
+
 // ---- Auth
 export const login = (username: string, password: string) =>
   apiFetch<AuthResponse>('/api/auth/login', { method: 'POST', body: { username, password }, anonymous: true })
@@ -272,3 +274,18 @@ export const getMyPreferences = () => apiFetch<UserPreferences>('/api/me/prefere
 export const updateMyPreferences = (body: UserPreferences) => apiFetch<UserPreferences>('/api/me/preferences', { method: 'PUT', body })
 export const previewWeeklyReport = () => apiFetch<WeeklyReportPreview>('/api/reports/weekly/preview', { method: 'POST' })
 export const sendWeeklyReportNow = () => apiFetch<{ status: string }>('/api/reports/weekly/send-now', { method: 'POST' })
+
+// ---- Quotes and visit booking
+export const createQuote = (leadId: string, body: CreateQuoteRequest) =>
+  apiFetch<Quote>(`/api/leads/${leadId}/quotes`, { method: 'POST', body })
+export const listQuotes = (leadId: string) => apiFetch<Quote[]>(`/api/leads/${leadId}/quotes`)
+export const sendQuote = (quoteId: string, to?: string) =>
+  apiFetch<Quote>(`/api/quotes/${quoteId}/send`, { method: 'POST', body: to ? { to } : {} })
+export const downloadQuotePdf = (quoteId: string) => apiDownload(`/api/quotes/${quoteId}/pdf`)
+export const createBookingLink = (leadId: string) => apiFetch<BookingLink>(`/api/leads/${leadId}/booking-links`, { method: 'POST' })
+export const listVisits = (from?: string, to?: string) => apiFetch<Visit[]>('/api/visits', { query: { from, to } })
+export const updateVisitStatus = (id: string, status: VisitStatus) =>
+  apiFetch<Visit>(`/api/visits/${id}`, { method: 'PATCH', body: { status } })
+export const getAvailability = () => apiFetch<AvailabilityWindow[]>('/api/availability')
+export const saveAvailability = (windows: AvailabilityWindow[]) =>
+  apiFetch<AvailabilityWindow[]>('/api/availability', { method: 'PUT', body: windows })
