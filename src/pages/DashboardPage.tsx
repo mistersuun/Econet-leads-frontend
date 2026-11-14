@@ -35,6 +35,7 @@ import { formatCurrency, formatDate, formatNumber, formatPercent } from '../lib/
 import { leadsHref } from '../lib/leadFilters'
 import { OUTCOME_META, PALETTE, STATUS_META } from '../lib/status'
 import { BestHoursWidget, ConversionByTypeWidget, FunnelWidget, LiveFeedWidget, TeamTodayWidget } from './dashboard/InsightWidgets'
+import { ClientsTile } from './dashboard/ClientsTile'
 import './dashboard.css'
 
 const SERIES = {
@@ -89,6 +90,7 @@ export default function DashboardPage() {
       </div>
 
       <Bento summary={summary} prev={prevSummary.data} range={range} />
+      <ClientsTile />
 
       <div style={{ marginTop: 16 }}>
         <UpcomingVisits />

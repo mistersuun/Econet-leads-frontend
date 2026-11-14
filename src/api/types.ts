@@ -627,7 +627,18 @@ export interface SendEmailResponse {
 
 // ---- Addendum 3: notifications
 
-export type NotificationKind = 'follow_up_due' | 'follow_up_overdue' | 'claim_expired' | 'tender_closing' | 'inbound_request' | 'saved_search' | 'quote_accepted' | 'visit_booked'
+export type NotificationKind =
+  | 'follow_up_due'
+  | 'follow_up_overdue'
+  | 'claim_expired'
+  | 'tender_closing'
+  | 'inbound_request'
+  | 'saved_search'
+  | 'quote_accepted'
+  | 'visit_booked'
+  | 'contract_renewal'
+  | 'review_request_due'
+  | 'visit_due'
 
 export interface AppNotification {
   id: string
@@ -979,4 +990,62 @@ export interface AvailabilityWindow {
   endTime: string
   slotMinutes: number
   active: boolean
+}
+
+// ---- Clients after the sale
+
+export type ClientFrequency = 'weekly' | 'bi-weekly' | 'monthly' | 'one-time'
+export type ClientStatus = 'active' | 'paused' | 'ended'
+
+export interface ClientDTO {
+  id: string
+  businessId: string
+  businessName: string
+  city: string | null
+  phone: string | null
+  email: string | null
+  service: string
+  frequency: ClientFrequency
+  pricePerVisit: number
+  /** Price per visit × visits per month (0 for one-time). */
+  monthlyValue: number
+  startDate: string
+  contractEndDate: string | null
+  nextVisitAt: string | null
+  status: ClientStatus
+  firstCleaningDoneAt: string | null
+  reviewRequestedAt: string | null
+  notes: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ClientPatch {
+  service?: string
+  frequency?: ClientFrequency
+  pricePerVisit?: number
+  startDate?: string
+  contractEndDate?: string | null
+  nextVisitAt?: string | null
+  status?: ClientStatus
+  notes?: string | null
+}
+
+export interface ClientsSummary {
+  active: number
+  monthlyRecurringRevenue: number
+  renewalsNext30Days: number
+  reviewsPending: number
+}
+
+export interface ReviewConfig {
+  googleReviewUrl: boolean
+  smtp: boolean
+}
+
+export interface ReviewResult {
+  channel: 'email' | 'link'
+  url: string
+  message: string
+  requestedAt: string
 }

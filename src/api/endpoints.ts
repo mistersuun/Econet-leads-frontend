@@ -1,6 +1,12 @@
 import { apiDownload, apiFetch, apiUpload, type Query, type UploadProgress } from './client'
 import type {
   ActivityPoint,
+  ClientDTO,
+  ClientPatch,
+  ClientStatus,
+  ClientsSummary,
+  ReviewConfig,
+  ReviewResult,
   AppNotification,
   BestHourCell,
   CallScript,
@@ -289,3 +295,15 @@ export const updateVisitStatus = (id: string, status: VisitStatus) =>
 export const getAvailability = () => apiFetch<AvailabilityWindow[]>('/api/availability')
 export const saveAvailability = (windows: AvailabilityWindow[]) =>
   apiFetch<AvailabilityWindow[]>('/api/availability', { method: 'PUT', body: windows })
+
+// ---- Clients after the sale
+export const listClients = (p: { status?: ClientStatus; businessId?: string } = {}) =>
+  apiFetch<ClientDTO[]>('/api/clients', { query: { status: p.status, businessId: p.businessId } })
+export const getClient = (id: string) => apiFetch<ClientDTO>(`/api/clients/${id}`)
+export const patchClient = (id: string, body: ClientPatch) => apiFetch<ClientDTO>(`/api/clients/${id}`, { method: 'PATCH', body })
+export const deleteClient = (id: string) => apiFetch<void>(`/api/clients/${id}`, { method: 'DELETE' })
+export const clientFirstCleaningDone = (id: string) => apiFetch<ClientDTO>(`/api/clients/${id}/first-cleaning-done`, { method: 'POST' })
+export const clientReviewRequest = (id: string, channel: 'email' | 'link') =>
+  apiFetch<ReviewResult>(`/api/clients/${id}/review-request`, { method: 'POST', body: { channel } })
+export const getClientReviewConfig = () => apiFetch<ReviewConfig>('/api/clients/review-config')
+export const getClientsSummary = () => apiFetch<ClientsSummary>('/api/dashboard/clients')
