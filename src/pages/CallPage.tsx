@@ -2,11 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError } from '../api/client'
-import { claimLead, getContacts, getLead, getMyToday, getQueue, patchQualification, releaseLead, snoozeLead } from '../api/endpoints'
-import type { BusinessDTO, LogCallRequest, LogCallResponse, Qualification, ScriptLanguage } from '../api/types'
+import { claimLead, getContacts, getIntegrationsStatus, getLead, getMyToday, getQueue, patchQualification, releaseLead, snoozeLead } from '../api/endpoints'
+import type { BusinessDTO, LogCallRequest, SmsTemplateKey, LogCallResponse, Qualification, ScriptLanguage } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { CallHistory } from '../components/CallHistory'
 import { EmailComposer } from '../components/EmailComposer'
+import { SmsFollowUpSheet, type SmsLead } from '../components/SmsFollowUpSheet'
 import { LeadCard } from '../components/LeadCard'
 import { OutcomeForm } from '../components/OutcomeForm'
 import { EmptyState, ErrorState, Skeleton, SkeletonRows } from '../components/States'
@@ -19,7 +20,7 @@ import { SessionBar } from '../components/session/SessionBar'
 import { SessionModal } from '../components/session/SessionModal'
 import { SessionSummary } from '../components/session/SessionSummary'
 import { useAddLead } from '../components/AddLead'
-import { IconCheck, IconChevronDown, IconPlus, IconChevronUp, IconMail, IconPhone, IconPlay, IconRefresh, IconScript, IconSkip, IconX } from '../components/icons'
+import { IconCheck, IconChevronDown, IconPlus, IconChevronUp, IconMail, IconMessage, IconPhone, IconPlay, IconRefresh, IconScript, IconSkip, IconX } from '../components/icons'
 import { useCallTimer } from '../hooks/useCallTimer'
 import { useLiveEvent } from '../live/LiveProvider'
 import {
@@ -68,6 +69,8 @@ export default function CallPage() {
   const [session, setSessionState] = useState<CallSession | null>(() => loadSession())
   const [sessionModal, setSessionModal] = useState(false)
   const [summary, setSummary] = useState<CallSession | null>(null)
+  const [smsLead, setSmsLead] = useState<{ lead: SmsLead; template?: SmsTemplateKey } | null>(null)
+  const integrations = useQuery({ queryKey: ['integrations-status'], queryFn: getIntegrationsStatus, staleTime: 5 * 60_000, enabled: !readOnly })
   const setSession = useCallback((next: CallSession | null) => {
     setSessionState(next)
     saveSession(next)
@@ -150,6 +153,12 @@ export default function CallPage() {
 
   const onLogged = (res: LogCallResponse, durationSeconds: number | null) => {
     advance(res.lead.id, 'handled')
+    // No answer / voicemail: offer a follow-up text for the lead we just left (only when texts are set up).
+    if (integrations.data?.sms && res.lead.phone && (res.contact.outcome === 'NO_ANSWER' || res.contact.outcome === 'VOICEMAIL')) {
+      const lead = res.lead
+      const template: SmsTemplateKey = res.contact.outcome === 'VOICEMAIL' ? 'after_voicemail' : 'missed_call'
+      toast(`Texto de suivi pour ${lead.businessName}?`, 'info', { sticky: true, action: { label: 'Texto de suivi', onClick: () => setSmsLead({ lead, template }) } })
+    }
     if (session) {
       const next = recordCall(session, { leadId: res.lead.id, leadName: res.lead.businessName, outcome: res.contact.outcome as LogCallRequest['outcome'], durationSeconds, at: Date.now() })
       if (next.calls.length >= next.size) {
@@ -273,9 +282,11 @@ export default function CallPage() {
           onSkip={() => onSkip(lead.id)}
           onClaimConflict={() => onSkip(lead.id)}
           onSnoozed={() => onSkip(lead.id)}
+          onSms={() => setSmsLead({ lead })}
         />
       )}
 
+      {smsLead && <SmsFollowUpSheet lead={smsLead.lead} defaultTemplate={smsLead.template} onClose={() => setSmsLead(null)} />}
       {sessionModal && <SessionModal onStart={startSession} onClose={() => setSessionModal(false)} />}
       {summary && <SessionSummary session={summary} onClose={() => setSummary(null)} />}
     </div>
@@ -293,9 +304,10 @@ interface ActiveProps {
   onSkip: () => void
   onClaimConflict: () => void
   onSnoozed: () => void
+  onSms: () => void
 }
 
-function ActiveLead({ lead, readOnly, paused, callerName, onLogged, onSkip, onClaimConflict, onSnoozed }: ActiveProps) {
+function ActiveLead({ lead, readOnly, paused, callerName, onLogged, onSkip, onClaimConflict, onSnoozed, onSms }: ActiveProps) {
   const qc = useQueryClient()
   const toast = useToast()
   const narrow = useMediaQuery('(max-width: 1080px)')
@@ -427,6 +439,9 @@ function ActiveLead({ lead, readOnly, paused, callerName, onLogged, onSkip, onCl
             <div className="row wrap call-lead-actions">
               <button type="button" className="btn btn-sm" onClick={() => setComposer(true)} disabled={readOnly}>
                 <IconMail size={15} /> Envoyer un courriel
+              </button>
+              <button type="button" className="btn btn-sm" onClick={onSms} disabled={readOnly || !lead.phone} title={lead.phone ? undefined : 'Aucun numéro de téléphone'}>
+                <IconMessage size={15} /> Texto de suivi
               </button>
             </div>
           </div>

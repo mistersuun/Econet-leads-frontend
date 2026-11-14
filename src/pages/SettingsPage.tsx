@@ -30,6 +30,7 @@ import { errorMessage } from '../lib/errors'
 import { formatRelative } from '../lib/format'
 import { placeholderKeys } from '../lib/placeholders'
 import TeamSection from './TeamSection'
+import IntegrationsSection from './IntegrationsSection'
 import './settings.css'
 
 const TABS = [
@@ -37,6 +38,7 @@ const TABS = [
   { key: 'emails', label: 'Modèles de courriel' },
   { key: 'targets', label: 'Objectifs' },
   { key: 'team', label: 'Équipe' },
+  { key: 'integrations', label: 'Intégrations' },
 ] as const
 type Tab = (typeof TABS)[number]['key']
 
@@ -60,7 +62,7 @@ export default function SettingsPage() {
   const navigate = useNavigate()
   const { hasRole } = useAuth()
   const isAdmin = hasRole('ADMIN')
-  const tabs = TABS.filter((t) => t.key !== 'team' || isAdmin)
+  const tabs = TABS.filter((t) => (t.key !== 'team' && t.key !== 'integrations') || isAdmin)
   const current: Tab = (tabs.find((t) => t.key === tab)?.key ?? 'scripts') as Tab
   useEffect(() => {
     if (!tab) navigate('/settings/scripts', { replace: true })
@@ -85,6 +87,7 @@ export default function SettingsPage() {
       {current === 'emails' && <EmailsTab />}
       {current === 'targets' && <TargetsTab />}
       {current === 'team' && isAdmin && <TeamSection />}
+      {current === 'integrations' && isAdmin && <IntegrationsSection />}
     </div>
   )
 }
