@@ -60,6 +60,7 @@ import type {
   TenderSummary,
   TenderUpdateRequest,
 } from './types'
+import type { IntegrationsStatus, SendSmsRequest, SmsTemplateKey, TestAlertResult } from './types'
 
 // ---- Auth
 export const login = (username: string, password: string) =>
@@ -242,3 +243,10 @@ export const setUserTargets = updateUserTargets
 export const changeMyPassword = (body: PasswordChange) => apiFetch<void>('/api/me/password', { method: 'POST', body })
 export const resetUserPassword = (userId: string, newPassword: string) =>
   apiFetch<void>(`/api/users/${userId}/password`, { method: 'PUT', body: { newPassword } })
+// ---- Intégrations, alertes et textos (P2)
+export const getIntegrationsStatus = () => apiFetch<IntegrationsStatus>('/api/integrations/status')
+export const sendTestAlert = () => apiFetch<TestAlertResult>('/api/integrations/test-alert', { method: 'POST' })
+export const previewFollowUpSms = (leadId: string, templateKey: SmsTemplateKey, language: string, signal?: AbortSignal) =>
+  apiFetch<{ body: string }>(`/api/leads/${leadId}/sms/preview`, { query: { templateKey, language }, signal })
+export const sendFollowUpSms = (leadId: string, body: SendSmsRequest) =>
+  apiFetch<{ status: string }>(`/api/leads/${leadId}/sms`, { method: 'POST', body })

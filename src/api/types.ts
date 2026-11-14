@@ -793,3 +793,35 @@ export interface PasswordChange {
   currentPassword: string
   newPassword: string
 }
+
+// ---- Intégrations, alertes et textos (P2)
+export interface IntegrationsStatus {
+  smtp: boolean
+  sms: boolean
+  alertsPhone: boolean
+  alertsEmail: boolean
+  places: boolean
+  placesUsedToday: number
+  placesDailyLimit: number
+  googleReviewUrl: boolean
+  websiteDb: boolean
+  publicUrl: string
+  crmUrl: string
+}
+
+export type SmsTemplateKey = 'missed_call' | 'after_voicemail' | 'quote_followup'
+
+export interface SendSmsRequest {
+  templateKey: SmsTemplateKey
+  language: ScriptLanguage
+  consent: boolean
+}
+
+export interface TestAlertResult {
+  smsConfigured: boolean
+  smsTargets: number
+  smsSent: number
+  emailConfigured: boolean
+  emailTargets: number
+  emailSent: number
+}
