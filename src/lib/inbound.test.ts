@@ -12,4 +12,10 @@ describe('inboundMessage', () => {
     expect(inboundKind({ businessType: 'Demande web – commercial' }, 'booking')).toBe('Commercial')
     expect(inboundKind(undefined, 'booking')).toBe('Réservation')
   })
+  it('announces an estimate request from the website', () => {
+    expect(inboundMessage({ leadName: 'Marie', kind: 'estimate' }, { businessType: 'Demande web – estimation', estimatedValue: 261 }))
+      .toMatch(/^Estimation du site : Marie · 261/)
+    expect(inboundMessage({ leadName: 'bob@example.test', kind: 'estimate' }, null)).toBe('Estimation du site : bob@example.test')
+    expect(inboundKind({ businessType: 'Demande web – estimation' }, 'estimate')).toBe('Estimation du site')
+  })
 })
