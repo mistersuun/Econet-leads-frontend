@@ -250,3 +250,17 @@ export const previewFollowUpSms = (leadId: string, templateKey: SmsTemplateKey, 
   apiFetch<{ body: string }>(`/api/leads/${leadId}/sms/preview`, { query: { templateKey, language }, signal })
 export const sendFollowUpSms = (leadId: string, body: SendSmsRequest) =>
   apiFetch<{ status: string }>(`/api/leads/${leadId}/sms`, { method: 'POST', body })
+
+// ---- Google Places enrichment and saved searches
+import type { PlacesStatus, SavedSearch, SavedSearchInput } from './types'
+
+export const getPlacesStatus = () => apiFetch<PlacesStatus>('/api/places/status')
+export const enrichLeadPlaces = (id: string) => apiFetch<BusinessDTO>(`/api/businesses/${id}/enrich/places`, { method: 'POST' })
+export const enrichLeadsPlaces = (ids: string[]) =>
+  apiFetch<ScraperJobDTO>('/api/businesses/enrich/places', { method: 'POST', body: { ids } })
+export const listSavedSearches = () => apiFetch<SavedSearch[]>('/api/saved-searches')
+export const createSavedSearch = (body: SavedSearchInput) => apiFetch<SavedSearch>('/api/saved-searches', { method: 'POST', body })
+export const updateSavedSearch = (id: string, body: SavedSearchInput) =>
+  apiFetch<SavedSearch>(`/api/saved-searches/${id}`, { method: 'PUT', body })
+export const deleteSavedSearch = (id: string) => apiFetch<void>(`/api/saved-searches/${id}`, { method: 'DELETE' })
+export const runSavedSearch = (id: string) => apiFetch<ScraperJobDTO>(`/api/saved-searches/${id}/run`, { method: 'POST' })

@@ -7,6 +7,7 @@ import { useAuth } from '../auth/AuthContext'
 import { CallHistory } from '../components/CallHistory'
 import { EmailComposer } from '../components/EmailComposer'
 import { SmsFollowUpSheet } from '../components/SmsFollowUpSheet'
+import { GoogleCard } from '../components/GoogleCard'
 import { LeadCard } from '../components/LeadCard'
 import { OutcomeForm } from '../components/OutcomeForm'
 import { EmptyState, ErrorState, SkeletonRows } from '../components/States'
@@ -217,6 +218,8 @@ export default function LeadDetailDrawer() {
                   </button>
                 </div>
               </section>
+
+              <GoogleCard lead={lead.data} canEdit={canEdit} />
 
               {calling && (
                 <section className="card card-pad" aria-label="Enregistrer un appel">

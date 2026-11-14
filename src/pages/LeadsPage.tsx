@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { Outlet, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { exportLeadsCsv, getLeadFilters, listLeads } from '../api/endpoints'
@@ -11,6 +11,7 @@ import { StatusBadge } from '../components/StatusBadge'
 import { useToast } from '../components/Toast'
 import { IconArrowDown, IconArrowUp, IconChevronLeft, IconChevronRight, IconDownload, IconPlus, IconSearch, IconX } from '../components/icons'
 import { useAddLead } from '../components/AddLead'
+import { BulkEnrichBar, MAX_BULK_ENRICH } from '../components/BulkEnrichBar'
 import { useAuth } from '../auth/AuthContext'
 import { errorMessage } from '../lib/errors'
 import { formatCurrency, formatDate, formatNumber, formatPhone, formatRelative, toApiDate, toDate } from '../lib/format'
@@ -70,6 +71,9 @@ export default function LeadsPage() {
   const { hasRole } = useAuth()
   const [search, setSearch] = useState(filters.q)
   const [exporting, setExporting] = useState(false)
+  const [picked, setPicked] = useState<Set<string>>(new Set())
+  const clearPicked = useCallback(() => setPicked(new Set()), [])
+  const canEdit = hasRole('ADMIN', 'USER')
 
   // Debounce the search box into the URL.
   useEffect(() => {
@@ -190,6 +194,8 @@ export default function LeadsPage() {
         </div>
       </div>
 
+      {canEdit && picked.size > 0 && <BulkEnrichBar ids={[...picked]} onClear={clearPicked} />}
+
       <div className="card leads-table-card" aria-busy={leads.isFetching}>
         {leads.isPending ? (
           <div style={{ padding: 20 }}>
@@ -205,6 +211,16 @@ export default function LeadsPage() {
               <table className="table leads-table">
                 <thead>
                   <tr>
+                    {canEdit && (
+                      <th className="row-check">
+                        <input
+                          type="checkbox"
+                          aria-label={`Sélectionner les leads de la page (${MAX_BULK_ENRICH} au maximum)`}
+                          checked={page!.content.length > 0 && page!.content.slice(0, MAX_BULK_ENRICH).every((l) => picked.has(l.id))}
+                          onChange={(e) => setPicked(e.target.checked ? new Set(page!.content.slice(0, MAX_BULK_ENRICH).map((l) => l.id)) : new Set())}
+                        />
+                      </th>
+                    )}
                     <SortHeader field="businessName" label="Entreprise" filters={filters} onSort={onSort} />
                     <SortHeader field="addressCity" label="Ville" filters={filters} onSort={onSort} className="hide-sm" />
                     <th className="hide-sm">Téléphone</th>
@@ -231,6 +247,21 @@ export default function LeadsPage() {
                         }
                       }}
                     >
+                      {canEdit && (
+                        <td className="row-check" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            aria-label={`Sélectionner ${l.businessName}`}
+                            checked={picked.has(l.id)}
+                            onChange={() => setPicked((s) => {
+                              const n = new Set(s)
+                              if (n.has(l.id)) n.delete(l.id)
+                              else n.add(l.id)
+                              return n
+                            })}
+                          />
+                        </td>
+                      )}
                       <td>
                         <div className="lead-name">{l.businessName}</div>
                         <div className="xs muted">
