@@ -3,13 +3,14 @@ import { useMutation } from '@tanstack/react-query'
 import { changeMyPassword } from '../api/endpoints'
 import { useAuth } from '../auth/AuthContext'
 import PasswordFields from '../components/PasswordFields'
+import { WeeklyReportToggle } from '../components/WeeklyReportToggle'
 import { useToast } from '../components/Toast'
 import { errorMessage } from '../lib/errors'
 import { passwordProblem } from '../lib/password'
 
 const ROLE_LABEL = { ADMIN: 'Administrateur', USER: 'Appelant', VIEWER: 'Lecture seule' } as const
 
-/** Réglages → Mon compte (every role): identity (read-only) and password change. */
+/** Réglages → Mon compte (every role): identity (read-only), password change and preferences. */
 export default function AccountTab() {
   const { user } = useAuth()
   return (
@@ -32,6 +33,10 @@ export default function AccountTab() {
         </dl>
       </section>
       <ChangePasswordForm username={user?.username ?? ''} />
+      <section className="stack" aria-labelledby="account-preferences-title">
+        <h2 id="account-preferences-title">Préférences</h2>
+        <WeeklyReportToggle />
+      </section>
     </div>
   )
 }

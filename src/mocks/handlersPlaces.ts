@@ -13,6 +13,11 @@ interface State {
 }
 const states = new WeakMap<Db, State>()
 
+/** Today's Places calls and the daily limit, also reported by the mock /api/integrations/status. */
+export function placesUsage(d: Db, now: Date): { used: number; dailyLimit: number } {
+  return { used: state(d, now).used, dailyLimit: DAILY_LIMIT }
+}
+
 function state(d: Db, now: Date): State {
   let s = states.get(d)
   if (!s) {

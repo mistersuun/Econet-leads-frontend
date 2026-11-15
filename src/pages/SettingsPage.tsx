@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NavLink, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { WeeklyReportToggle } from '../components/WeeklyReportToggle'
 import {
   createScript,
   getLeadFilters,
@@ -91,12 +90,6 @@ export default function SettingsPage() {
       {current === 'scripts' && <ScriptsTab />}
       {current === 'emails' && <EmailsTab />}
       {current === 'targets' && <TargetsTab />}
-      {current === 'targets' && (
-        <section className="stack" style={{ marginTop: 24 }}>
-          <h2>Préférences</h2>
-          <WeeklyReportToggle />
-        </section>
-      )}
       {current === 'team' && isAdmin && <TeamSection />}
       {current === 'account' && <AccountTab />}
       {current === 'integrations' && isAdmin && <IntegrationsSection />}

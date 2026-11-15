@@ -23,7 +23,7 @@ function rows(s: IntegrationsStatus): Row[] {
     { key: 'alertsEmail', label: 'Alertes par courriel', help: 'Un courriel par nouvelle demande du site.', ok: s.alertsEmail && s.smtp, env: ['ALERT_EMAIL'], detail: s.alertsEmail && !s.smtp ? 'Adresse définie, mais le SMTP n’est pas configuré.' : undefined },
     { key: 'places', label: 'Google Places', help: 'Fiches Google des entreprises (note, avis, heures).', ok: s.places, env: ['GOOGLE_PLACES_API_KEY', 'PLACES_DAILY_LIMIT'], detail: s.places ? `${s.placesUsedToday} / ${s.placesDailyLimit} appels aujourd’hui` : undefined },
     { key: 'review', label: 'Lien d’avis Google', help: 'Lien envoyé aux clients pour demander un avis.', ok: s.googleReviewUrl, env: ['GOOGLE_REVIEW_URL'] },
-    { key: 'website', label: 'Base de données du site web', help: 'Importe les demandes de réservation et de contact du site.', ok: s.websiteDb, env: ['WEBSITE_DB_URL', 'WEBSITE_DB_USERNAME', 'WEBSITE_DB_PASSWORD'] },
+    { key: 'website', label: 'Base de données du site web', help: 'Importe les demandes de réservation, de contact et d’estimation du site.', ok: s.websiteDb, env: ['WEBSITE_DB_URL', 'WEBSITE_DB_USERNAME', 'WEBSITE_DB_PASSWORD'] },
   ]
 }
 

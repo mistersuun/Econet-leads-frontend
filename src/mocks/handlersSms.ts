@@ -4,16 +4,18 @@ import type { Db } from './db'
 import { HttpError, type Req, type Result } from './http'
 import type { MockUser } from './seed'
 import { isoLocal, mockId } from './seed'
+import { placesUsage } from './handlersPlaces'
 
 const STATUS: IntegrationsStatus = {
   smtp: true,
   sms: true,
   alertsPhone: true,
   alertsEmail: false,
-  places: false,
+  // The Places and review-link mocks (handlersPlaces, handlersClients) behave as configured.
+  places: true,
   placesUsedToday: 0,
   placesDailyLimit: 100,
-  googleReviewUrl: false,
+  googleReviewUrl: true,
   websiteDb: false,
   publicUrl: 'http://localhost:8080',
   crmUrl: 'http://localhost:5173',
@@ -45,7 +47,8 @@ export function handleSms(req: Req, d: Db, user: MockUser, now: Date): Result | 
   let m: RegExpExecArray | null
   if (path === '/api/integrations/status' && method === 'GET') {
     if (user.role === 'VIEWER') throw new HttpError(403, 'Accès refusé pour votre rôle')
-    return { json: STATUS }
+    const usage = placesUsage(d, now)
+    return { json: { ...STATUS, placesUsedToday: usage.used, placesDailyLimit: usage.dailyLimit } }
   }
   if (path === '/api/integrations/test-alert' && method === 'POST') {
     if (user.role !== 'ADMIN') throw new HttpError(403, 'Accès refusé pour votre rôle')

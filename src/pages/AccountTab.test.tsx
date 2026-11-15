@@ -44,6 +44,7 @@ describe('Mon compte / réinitialisation', () => {
   const submit = (form: HTMLFormElement) => act(async () => { form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })) })
   const click = (el: Element) => act(async () => { (el as HTMLElement).click() })
   const buttonByText = (text: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.includes(text))!
+  const passwordCalls = () => fetchMock.mock.calls.filter(([u]) => String(u).endsWith('/api/me/password'))
 
   const renderTab = async () => {
     await act(async () => {
@@ -64,6 +65,9 @@ describe('Mon compte / réinitialisation', () => {
     await renderTab()
     expect(host.textContent).toContain('marie@econet.ca')
     expect(host.textContent).toContain('Appelant')
+    // The weekly coaching email preference (P4) lives in Mon compte, under "Préférences".
+    expect(host.textContent).toContain('Préférences')
+    expect(host.textContent).toContain('Recevoir le courriel hebdomadaire')
 
     const inputs = host.querySelectorAll<HTMLInputElement>('form input')
     await act(async () => {
@@ -90,12 +94,12 @@ describe('Mon compte / réinitialisation', () => {
     })
     await submit(host.querySelector('form')!)
     expect(host.textContent).toContain('ne correspondent pas')
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(passwordCalls()).toHaveLength(0)
 
     await act(async () => { setValue(inputs[2], 'nouveau-secret-12') })
     await submit(host.querySelector('form')!)
     await flush()
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(passwordCalls()).toHaveLength(1)
     expect(host.textContent).toContain('Le mot de passe actuel est incorrect')
   })
 
