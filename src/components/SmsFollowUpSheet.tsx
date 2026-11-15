@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getIntegrationsStatus, previewFollowUpSms, sendFollowUpSms } from '../api/endpoints'
 import type { BusinessDTO, ScriptLanguage, SmsTemplateKey } from '../api/types'
 import { errorMessage } from '../lib/errors'
+import { smsPhone } from '../lib/smsPhone'
 import { SkeletonRows } from './States'
 import { useToast } from './Toast'
 import { IconX } from './icons'
@@ -59,7 +60,7 @@ export function SmsFollowUpSheet({ lead, defaultTemplate, defaultLanguage, onClo
   }, [onClose])
 
   const notConfigured = status.data?.sms === false
-  const noPhone = !lead.phone
+  const noPhone = !smsPhone(lead)
   const canSend = !notConfigured && !noPhone && consent && !send.isPending
 
   return (

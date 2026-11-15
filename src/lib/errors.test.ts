@@ -17,6 +17,11 @@ describe('errors', () => {
     expect(frenchMessage('Erreur 500', 500)).toBe('Erreur interne du serveur, réessayez dans un instant.')
     expect(frenchMessage('', 403)).toBe("Vous n'avez pas les droits pour cette action.")
   })
+  it('uses the status sentence for an unknown English message', () => {
+    expect(frenchMessage('Email could not be sent: Connection refused', 502)).toBe('Le service externe ne répond pas, réessayez dans un instant.')
+    expect(frenchMessage('objections must contain at most 5 items', 400)).toBe('Requête invalide.')
+    expect(frenchMessage('Something odd')).toBe('Something odd')
+  })
   it('translates ApiError and plain Error', () => {
     expect(errorMessage(new ApiError('Access denied', 403))).toBe('Accès refusé')
     expect(errorMessage(new Error('Failed to fetch'))).toBe('Impossible de joindre le serveur. Vérifiez votre connexion.')

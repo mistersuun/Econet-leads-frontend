@@ -18,5 +18,6 @@ describe('sizeToArea', () => {
     expect(sizeToArea(500)).toBe('under_800')
     expect(sizeToArea(1200)).toBe('800_1500')
     expect(sizeToArea(2500)).toBe('1500_2500')
+    expect(sizeToArea(4000)).toBe('over_2500')
   })
 })

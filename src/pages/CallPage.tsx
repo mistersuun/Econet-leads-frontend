@@ -42,6 +42,7 @@ import {
 } from '../lib/callSession'
 import { applyLoggedCall } from '../lib/callLogging'
 import { errorMessage } from '../lib/errors'
+import { smsPhone } from '../lib/smsPhone'
 import { objectionChips } from '../lib/objections'
 import { QUICK_LABEL, type DetailedChoice, type QuickOutcome } from '../lib/quickOutcomes'
 import { substitutePlaceholders } from '../lib/placeholders'
@@ -96,6 +97,9 @@ export default function CallPage() {
   // Leads a teammate claimed since our last fetch (a fresh queue from the server is authoritative).
   const [claimedElsewhere, setClaimedElsewhere] = useState<Map<string, number>>(() => new Map())
   const refetchedFor = useRef<number | null>(null)
+  // One-tap logs waiting out their undo delay (or in flight). `sent` once the request has left.
+  const pendingLogs = useRef(new Map<string, { timer: ReturnType<typeof setTimeout>; send: () => void; sent: boolean }>())
+  const [pendingTick, setPendingTick] = useState(0)
 
   useLiveEvent((e) => {
     if (e.type === 'lead.claimed' && e.data.userId !== user?.userId) {
@@ -133,13 +137,15 @@ export default function CallPage() {
   // When the local copy of the queue runs out, fetch a fresh one from the server (once per batch).
   useEffect(() => {
     if (!queue.data || queue.isFetching || remaining.length > 0 || queue.data.length === 0) return
+    // A one-tap log still waiting out its undo delay: the server would hand the same lead back.
+    if (pendingLogs.current.size > 0) return
     if (refetchedFor.current === queue.dataUpdatedAt) return
     refetchedFor.current = queue.dataUpdatedAt
     void queue.refetch().then(() => {
       setHandled(new Set())
       setSkipped(new Set())
     })
-  }, [queue, remaining.length])
+  }, [queue, remaining.length, pendingTick])
 
   // Prefetch the next lead's history so advancing feels instant.
   const nextLead = remaining[1]
@@ -163,10 +169,10 @@ export default function CallPage() {
 
   // No answer / voicemail: offer a follow-up text for the lead we just left (only when texts are set up).
   const offerFollowUpSms = (res: LogCallResponse) => {
-    if (integrations.data?.sms && res.lead.phone && (res.contact.outcome === 'NO_ANSWER' || res.contact.outcome === 'VOICEMAIL')) {
+    if (integrations.data?.sms && smsPhone(res.lead) && (res.contact.outcome === 'NO_ANSWER' || res.contact.outcome === 'VOICEMAIL')) {
       const lead = res.lead
       const template: SmsTemplateKey = res.contact.outcome === 'VOICEMAIL' ? 'after_voicemail' : 'missed_call'
-      toast(`Texto de suivi pour ${lead.businessName}?`, 'info', { sticky: true, action: { label: 'Texto de suivi', onClick: () => setSmsLead({ lead, template }) } })
+      toast(`Texto de suivi pour ${lead.businessName}?`, 'info', { durationMs: 8000, action: { label: 'Texto de suivi', icon: false, onClick: () => setSmsLead({ lead, template }) } })
     }
   }
 
@@ -188,7 +194,6 @@ export default function CallPage() {
   useEffect(() => {
     sessionRef.current = session
   })
-  const pendingLogs = useRef(new Map<string, { timer: ReturnType<typeof setTimeout>; send: () => void }>())
   const flushPending = useCallback(() => {
     for (const p of [...pendingLogs.current.values()]) {
       clearTimeout(p.timer)
@@ -211,39 +216,56 @@ export default function CallPage() {
   const quickLog = (target: BusinessDTO, outcome: CallOutcome, durationSeconds: number | null) => {
     const req: LogCallRequest = { outcome, durationSeconds: durationSeconds ?? undefined }
     const leadId = target.id
+    // Set when this very call ended the session, so undo can reopen it.
+    let endedSession: CallSession | null = null
     const un = () => {
       setHandled((s) => {
         const n = new Set(s)
         n.delete(leadId)
         return n
       })
+      // Come back to the lead that was just undone.
+      setStickyId(leadId)
       const cur = sessionRef.current
       if (cur) setSession(undoCall(cur, leadId))
+      else if (endedSession) {
+        setSummary(null)
+        setSession(undoCall(endedSession, leadId))
+      }
     }
     advance(leadId, 'handled')
     if (session) {
       const next = recordCall(session, { leadId, leadName: target.businessName, outcome, durationSeconds, at: Date.now() })
       if (next.calls.length >= next.size) {
+        endedSession = next
         setSession(null)
         setSummary(endSession(next))
         toast('Session terminée — beau travail!')
       } else setSession(next)
     }
     const send = () => {
-      pendingLogs.current.delete(leadId)
-      logCall(leadId, req).then(
+      const entry = pendingLogs.current.get(leadId)
+      if (!entry || entry.sent) return
+      entry.sent = true
+      const settle = () => {
+        pendingLogs.current.delete(leadId)
+        setPendingTick((t) => t + 1)
+      }
+      logCall(leadId, req, { keepalive: true }).then(
         (res) => {
+          settle()
           applyLoggedCall(qc, res)
           // One-tap "Pas de réponse" / "Message laissé" get the same follow-up text offer as the detailed form.
           offerFollowUpSms(res)
         },
         (e: unknown) => {
+          settle()
           toast(`${target.businessName} : ${errorMessage(e)}`, 'error')
           un()
         },
       )
     }
-    pendingLogs.current.set(leadId, { timer: setTimeout(send, UNDO_MS), send })
+    pendingLogs.current.set(leadId, { timer: setTimeout(send, UNDO_MS), send, sent: false })
     const label = outcome in QUICK_LABEL ? QUICK_LABEL[outcome as QuickOutcome] : outcome
     toast(`${label} — ${target.businessName}`, 'success', {
       durationMs: UNDO_MS,
@@ -252,12 +274,13 @@ export default function CallPage() {
         icon: false,
         onClick: () => {
           const p = pendingLogs.current.get(leadId)
-          if (!p) {
+          if (!p || p.sent) {
             toast('Déjà enregistré : corrigez-le dans l’historique du lead.', 'info')
             return
           }
           clearTimeout(p.timer)
           pendingLogs.current.delete(leadId)
+          setPendingTick((t) => t + 1)
           un()
           toast('Appel annulé', 'info')
         },
@@ -376,6 +399,7 @@ export default function CallPage() {
           callerName={user?.username ?? ''}
           onLogged={onLogged}
           onQuickLog={quickLog}
+          hasPendingLog={(id) => pendingLogs.current.has(id)}
           onSkip={() => onSkip(lead.id)}
           onClaimConflict={() => onSkip(lead.id)}
           onSnoozed={() => onSkip(lead.id)}
@@ -399,13 +423,15 @@ interface ActiveProps {
   callerName: string
   onLogged: (res: LogCallResponse, durationSeconds: number | null) => void
   onQuickLog: (lead: BusinessDTO, outcome: CallOutcome, durationSeconds: number | null) => void
+  /** True while a one-tap log for this lead is still to be sent: its claim stays until the log releases it. */
+  hasPendingLog: (id: string) => boolean
   onSkip: () => void
   onClaimConflict: () => void
   onSnoozed: () => void
   onSms: () => void
 }
 
-function ActiveLead({ lead, readOnly, paused, callerName, onLogged, onQuickLog, onSkip, onClaimConflict, onSnoozed, onSms }: ActiveProps) {
+function ActiveLead({ lead, readOnly, paused, callerName, onLogged, onQuickLog, hasPendingLog, onSkip, onClaimConflict, onSnoozed, onSms }: ActiveProps) {
   const qc = useQueryClient()
   const toast = useToast()
   const narrow = useMediaQuery('(max-width: 1080px)')
@@ -424,8 +450,10 @@ function ActiveLead({ lead, readOnly, paused, callerName, onLogged, onQuickLog, 
 
   // ---- claim: take it now, refresh every 4 min, release when leaving.
   const conflictRef = useRef(onClaimConflict)
+  const pendingRef = useRef(hasPendingLog)
   useEffect(() => {
     conflictRef.current = onClaimConflict
+    pendingRef.current = hasPendingLog
   })
   useEffect(() => {
     if (readOnly) return
@@ -444,7 +472,8 @@ function ActiveLead({ lead, readOnly, paused, callerName, onLogged, onQuickLog, 
     return () => {
       alive = false
       clearInterval(id)
-      void releaseLead(lead.id).catch(() => undefined)
+      // A delayed one-tap log releases the claim on the server itself; releasing now would reopen the lead to teammates.
+      if (!pendingRef.current(lead.id)) void releaseLead(lead.id).catch(() => undefined)
     }
   }, [lead.id, readOnly, toast])
 
@@ -561,7 +590,7 @@ function ActiveLead({ lead, readOnly, paused, callerName, onLogged, onQuickLog, 
               <button type="button" className="btn btn-sm" onClick={() => setComposer(true)} disabled={readOnly}>
                 <IconMail size={15} /> Envoyer un courriel
               </button>
-              <button type="button" className="btn btn-sm" onClick={onSms} disabled={readOnly || !lead.phone} title={lead.phone ? undefined : 'Aucun numéro de téléphone'}>
+              <button type="button" className="btn btn-sm" onClick={onSms} disabled={readOnly || !smsPhone(lead)} title={smsPhone(lead) ? undefined : 'Aucun numéro de téléphone'}>
                 <IconMessage size={15} /> Texto de suivi
               </button>
             </div>
@@ -690,7 +719,12 @@ function ActiveLead({ lead, readOnly, paused, callerName, onLogged, onQuickLog, 
         </>
       )}
 
-      {quickOpen && <QuickOutcomeSheet leadName={lead.businessName} durationSeconds={timer.elapsed || null} onQuick={chooseQuick} onDetailed={chooseDetailed} onClose={() => setQuickOpen(false)} />}
+      {quickOpen && <QuickOutcomeSheet leadName={lead.businessName} durationSeconds={timer.elapsed || null} onQuick={chooseQuick} onDetailed={chooseDetailed} onClose={() => {
+        setQuickOpen(false)
+        // Closed without choosing (busy line…): let the next tap on the number start a fresh timer.
+        durationRef.current = null
+        timer.reset()
+      }} />}
 
       {composer && (
         <EmailComposer

@@ -44,6 +44,7 @@ const TABS = [
   { key: 'integrations', label: 'Intégrations' },
   { key: 'availability', label: 'Disponibilités' },
 ] as const
+const NON_ADMIN_TABS: readonly string[] = ['account']
 type Tab = (typeof TABS)[number]['key']
 
 const SECTION_LABEL: Record<ScriptSectionKey, string> = { opening: 'Ouverture', questions: 'Questions', objections: 'Objections', closing: 'Clôture', voicemail: 'Message vocal' }
@@ -59,6 +60,8 @@ const EMAIL_PLACEHOLDERS: { key: string; help: string }[] = [
   { key: 'estimate', help: 'lignes de l’estimation (si incluse)' },
   { key: 'visitAt', help: 'date de visite en toutes lettres' },
   { key: 'extraNote', help: 'note ajoutée par l’agent' },
+  { key: 'quoteLink', help: 'lien d’acceptation de la dernière soumission ouverte (ligne retirée s’il n’y en a pas)' },
+  { key: 'bookingLink', help: 'lien de réservation actif (ligne retirée s’il n’y en a pas)' },
 ]
 
 export default function SettingsPage() {
@@ -66,11 +69,12 @@ export default function SettingsPage() {
   const navigate = useNavigate()
   const { hasRole } = useAuth()
   const isAdmin = hasRole('ADMIN')
-  const tabs = TABS.filter((t) => (t.key !== 'team' && t.key !== 'integrations' && t.key !== 'availability') || isAdmin)
-  const current: Tab = (tabs.find((t) => t.key === tab)?.key ?? 'scripts') as Tab
+  const tabs = TABS.filter((t) => isAdmin || NON_ADMIN_TABS.includes(t.key))
+  const fallback: Tab = isAdmin ? 'scripts' : 'account'
+  const current: Tab = (tabs.find((t) => t.key === tab)?.key ?? fallback) as Tab
   useEffect(() => {
-    if (!tab) navigate('/settings/scripts', { replace: true })
-  }, [tab, navigate])
+    if (!tab) navigate(`/settings/${fallback}`, { replace: true })
+  }, [tab, navigate, fallback])
 
   return (
     <div className="page settings">
@@ -87,9 +91,9 @@ export default function SettingsPage() {
           </NavLink>
         ))}
       </nav>
-      {current === 'scripts' && <ScriptsTab />}
-      {current === 'emails' && <EmailsTab />}
-      {current === 'targets' && <TargetsTab />}
+      {current === 'scripts' && isAdmin && <ScriptsTab />}
+      {current === 'emails' && isAdmin && <EmailsTab />}
+      {current === 'targets' && isAdmin && <TargetsTab />}
       {current === 'team' && isAdmin && <TeamSection />}
       {current === 'account' && <AccountTab />}
       {current === 'integrations' && isAdmin && <IntegrationsSection />}

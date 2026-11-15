@@ -38,7 +38,7 @@ function state(d: Db, now: Date): State {
 
 function doneJob(d: Db, now: Date, name: string, processed: number, added: number, updated: number): ScraperJobDTO {
   const job: ScraperJobDTO = {
-    id: mockId('j'),
+    id: mockId('f'),
     source: { id: mockId('d'), sourceName: name, sourceType: 'MANUAL', sourceUrl: null },
     jobType: 'MANUAL_SCRAPE', status: 'COMPLETED', startedAt: isoLocal(now), completedAt: isoLocal(now),
     recordsProcessed: processed, recordsAdded: added, recordsUpdated: updated, errors: null, log: null, durationSeconds: 1, createdAt: isoLocal(now),

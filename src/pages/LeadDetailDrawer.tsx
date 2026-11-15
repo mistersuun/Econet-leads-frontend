@@ -15,6 +15,7 @@ import { EmptyState, ErrorState, SkeletonRows } from '../components/States'
 import { useToast } from '../components/Toast'
 import { IconMail, IconMessage, IconPhone, IconX } from '../components/icons'
 import { errorMessage } from '../lib/errors'
+import { smsPhone } from '../lib/smsPhone'
 import { formatCurrency, formatDateTime } from '../lib/format'
 import { STATUS_META } from '../lib/status'
 import './lead-detail.css'
@@ -214,7 +215,7 @@ export default function LeadDetailDrawer() {
                   <button type="button" className="btn" onClick={() => setComposing(true)} disabled={!canEdit} title={canEdit ? undefined : 'Lecture seule'}>
                     <IconMail size={17} /> Envoyer un courriel
                   </button>
-                  <button type="button" className="btn" onClick={() => setTexting(true)} disabled={!canEdit || !lead.data.phone} title={canEdit ? (lead.data.phone ? undefined : 'Aucun numéro de téléphone') : 'Lecture seule'}>
+                  <button type="button" className="btn" onClick={() => setTexting(true)} disabled={!canEdit || !smsPhone(lead.data)} title={canEdit ? (smsPhone(lead.data) ? undefined : 'Aucun numéro de téléphone') : 'Lecture seule'}>
                     <IconMessage size={17} /> Texto de suivi
                   </button>
                 </div>

@@ -65,7 +65,7 @@ export function handleSms(req: Req, d: Db, user: MockUser, now: Date): Result | 
     if (!m[2] && method === 'POST') {
       const b = (req.body ?? {}) as { templateKey?: string; language?: string; consent?: boolean }
       if (b.consent !== true) throw new HttpError(400, 'Le consentement du client est requis pour envoyer un texto')
-      if (!lead.phone) throw new HttpError(400, 'Ce lead n’a pas de numéro de téléphone valide pour un texto')
+      if (!lead.phone && !lead.qualification?.directPhone) throw new HttpError(400, 'Ce lead n’a pas de numéro de téléphone valide pour un texto')
       const body = render(b.templateKey ?? '', b.language ?? lead.qualification?.language ?? 'fr', lead.businessName, user.username)
       const recent = (sentByUser.get(user.userId) ?? []).filter((t) => t > now.getTime() - 3600_000)
       if (recent.length >= 20) throw new HttpError(429, 'Limite atteinte : au plus 20 textos par heure par utilisateur')

@@ -236,7 +236,7 @@ function startImport(d: Db, user: MockUser, importId: string, req: ImportRunRequ
     d.sources.push(source)
   }
   const job: ScraperJobDTO = {
-    id: mockId('j'),
+    id: mockId('f'),
     source: { id: source.id, sourceName: source.sourceName, sourceType: source.sourceType, sourceUrl: null },
     jobType: 'MANUAL_SCRAPE',
     status: 'PENDING',

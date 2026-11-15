@@ -16,12 +16,12 @@ export const DEFAULT_ESTIMATE: EstimateInput = {
   frequency: 'weekly',
 }
 
-/** Estimate area bucket for a known size; over 2 500 sq ft needs a custom quote, so the caller picks. */
+/** Estimate area bucket for a known size; over 2 500 sq ft is 'over_2500' (custom quote, not priced online). */
 export function sizeToArea(sqft: number): EstimateInput['area'] {
   if (sqft < 800) return 'under_800'
   if (sqft < 1500) return '800_1500'
   if (sqft <= 2500) return '1500_2500'
-  return 'under_800'
+  return 'over_2500'
 }
 
 export const WEEKDAYS = [

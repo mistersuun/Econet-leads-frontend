@@ -202,7 +202,7 @@ export function makeHistoricalJobs(sources: DataSource[], now: Date, r: Rng): Sc
     const failed = i === 3 || i === 10
     const processed = failed ? r.int(0, 40) : r.int(80, 1600)
     jobs.push({
-      id: mockId('j'),
+      id: mockId('f'),
       source: { id: s.id, sourceName: s.sourceName, sourceType: s.sourceType, sourceUrl: s.sourceUrl },
       jobType: i % 3 === 0 ? 'FULL_SYNC' : 'INCREMENTAL_SYNC',
       status: failed ? 'FAILED' : 'COMPLETED',

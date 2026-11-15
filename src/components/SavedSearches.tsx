@@ -20,7 +20,10 @@ export function SaveSearchPanel({ city, categories, maxResults, onSaved }: { cit
   const [name, setName] = useState('')
   const [frequency, setFrequency] = useState<SavedSearchFrequency>('monthly')
   const [assignTo, setAssignTo] = useState('')
-  const users = useQuery({ queryKey: ['users'], queryFn: getUsers, enabled: open, staleTime: 5 * 60_000 })
+  const { hasRole } = useAuth()
+  const isAdmin = hasRole('ADMIN')
+  // GET /api/users is admin-only: other roles cannot pick an assignee.
+  const users = useQuery({ queryKey: ['users'], queryFn: getUsers, enabled: open && isAdmin, staleTime: 5 * 60_000 })
 
   const save = useMutation({
     mutationFn: () => createSavedSearch({ name: name.trim(), city: city.trim(), categories, maxResults, frequency, assignToUserId: assignTo || null }),
@@ -58,13 +61,17 @@ export function SaveSearchPanel({ city, categories, maxResults, onSaved }: { cit
           <option value="weekly">Chaque semaine</option>
         </select>
       </label>
-      <label className="field">
-        <span>Assigner les nouveaux leads à</span>
-        <select className="select" value={assignTo} onChange={(e) => setAssignTo(e.target.value)}>
-          <option value="">Personne (file commune)</option>
-          {(users.data ?? []).map((u) => <option key={u.id} value={u.id}>{u.username}</option>)}
-        </select>
-      </label>
+      {isAdmin ? (
+        <label className="field">
+          <span>Assigner les nouveaux leads à</span>
+          <select className="select" value={assignTo} onChange={(e) => setAssignTo(e.target.value)}>
+            <option value="">Personne (file commune)</option>
+            {(users.data ?? []).filter((u) => u.role !== 'VIEWER').map((u) => <option key={u.id} value={u.id}>{u.username}</option>)}
+          </select>
+        </label>
+      ) : (
+        <p className="xs muted">Les nouveaux leads iront dans la file commune. Seul un administrateur peut les assigner à une personne.</p>
+      )}
       <div className="save-search-actions">
         <button type="submit" className="btn btn-primary btn-sm" disabled={!name.trim() || save.isPending}>{save.isPending ? 'Enregistrement…' : 'Enregistrer'}</button>
         <button type="button" className="btn btn-ghost btn-sm" onClick={() => setOpen(false)}>Annuler</button>

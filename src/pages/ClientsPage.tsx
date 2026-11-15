@@ -79,21 +79,29 @@ export default function ClientsPage() {
       </div>
 
       <section className="card card-pad cl-summary" aria-label="Résumé des clients">
+        {summary.isError && (
+          <p className="small text-danger" role="alert" style={{ gridColumn: '1 / -1', margin: 0 }}>
+            Résumé indisponible pour l’instant.{' '}
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => void summary.refetch()}>
+              Réessayer
+            </button>
+          </p>
+        )}
         <div>
           <span className="tile-label">Revenu mensuel récurrent</span>
-          {s ? <span className="cl-figure num" data-testid="mrr">{formatCurrency(s.monthlyRecurringRevenue)}</span> : <Skeleton height={40} width={140} />}
+          {summary.isError ? <span className="cl-figure num muted">—</span> : s ? <span className="cl-figure num" data-testid="mrr">{formatCurrency(s.monthlyRecurringRevenue)}</span> : <Skeleton height={40} width={140} />}
         </div>
         <div>
           <span className="tile-label">Clients actifs</span>
-          {s ? <span className="cl-figure num">{formatNumber(s.active)}</span> : <Skeleton height={40} width={64} />}
+          {summary.isError ? <span className="cl-figure num muted">—</span> : s ? <span className="cl-figure num">{formatNumber(s.active)}</span> : <Skeleton height={40} width={64} />}
         </div>
         <div>
           <span className="tile-label">Renouvellements d’ici 30 jours</span>
-          {s ? <span className="cl-figure num">{formatNumber(s.renewalsNext30Days)}</span> : <Skeleton height={40} width={64} />}
+          {summary.isError ? <span className="cl-figure num muted">—</span> : s ? <span className="cl-figure num">{formatNumber(s.renewalsNext30Days)}</span> : <Skeleton height={40} width={64} />}
         </div>
         <div>
           <span className="tile-label">Avis Google à demander</span>
-          {s ? <span className="cl-figure num">{formatNumber(s.reviewsPending)}</span> : <Skeleton height={40} width={64} />}
+          {summary.isError ? <span className="cl-figure num muted">—</span> : s ? <span className="cl-figure num">{formatNumber(s.reviewsPending)}</span> : <Skeleton height={40} width={64} />}
         </div>
       </section>
 

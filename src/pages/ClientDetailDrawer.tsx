@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { clientFirstCleaningDone, clientReviewRequest, deleteClient, getClient, getClientReviewConfig, patchClient } from '../api/endpoints'
+import { clientFirstCleaningDone, clientReviewRequest, deleteClient, getClient, getClientReviewConfig, getLead, patchClient } from '../api/endpoints'
 import type { ClientDTO, ClientFrequency, ClientPatch, ClientStatus, ReviewResult } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { ErrorState, SkeletonRows } from '../components/States'
@@ -132,12 +132,16 @@ function EditForm({ client, canEdit }: { client: ClientDTO; canEdit: boolean }) 
 function ReviewSection({ client, canEdit }: { client: ClientDTO; canEdit: boolean }) {
   const toast = useToast()
   const refresh = useRefreshClients()
+  const qc = useQueryClient()
+  // The server also falls back to the email recorded in the call qualification.
+  const lead = useQuery({ queryKey: ['lead', client.businessId], queryFn: () => getLead(client.businessId), enabled: !client.email, staleTime: 60_000 })
   const config = useQuery({ queryKey: ['clients', 'review-config'], queryFn: getClientReviewConfig, staleTime: 5 * 60_000 })
   const [result, setResult] = useState<ReviewResult | null>(null)
   const ask = useMutation({
     mutationFn: (channel: 'email' | 'link') => clientReviewRequest(client.id, channel),
     onSuccess: (r) => {
       refresh()
+      void qc.invalidateQueries({ queryKey: ['client', client.id] })
       if (r.channel === 'email') toast('Demande d’avis envoyée par courriel')
       else setResult(r)
     },
@@ -154,7 +158,7 @@ function ReviewSection({ client, canEdit }: { client: ClientDTO; canEdit: boolea
 
   const noUrl = config.data && !config.data.googleReviewUrl
   const noSmtp = config.data && !config.data.smtp
-  const hasEmail = !!client.email
+  const hasEmail = !!(client.email || lead.data?.qualification?.email)
 
   return (
     <section className="card card-pad stack" aria-labelledby="cl-review">

@@ -50,6 +50,8 @@ const BY_STATUS: Record<number, string> = {
 
 const FRENCH_HINT = /[àâçéèêëîïôûùüÿœ«»]|\b(le|la|les|un|une|des|est|pour|dans|ne|pas|du|vous|votre|sur)\b/i
 
+const ENGLISH_HINT = /\b(the|is|are|be|must|could|should|not|invalid|missing|required|empty|or|and|of|to|at|for|cannot|failed|error|found|limit|exceed)\b/i
+
 /**
  * French fallback for server messages. French messages pass through unchanged; known English ones
  * are mapped; an unknown English message falls back to a generic sentence for its HTTP status.
@@ -64,6 +66,8 @@ export function frenchMessage(message: string, status?: number): string {
     const m = re.exec(text)
     if (m) return fn(m)
   }
+  // Unknown and English-looking: a generic French sentence for the status beats raw English.
+  if (ENGLISH_HINT.test(text)) return (status && BY_STATUS[status]) || text
   return text
 }
 

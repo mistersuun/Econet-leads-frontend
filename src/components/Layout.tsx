@@ -119,9 +119,9 @@ function LayoutShell() {
     ...(hasRole('ADMIN')
       ? [
           { to: '/sources', label: 'Sources', short: 'Sources', icon: IconDatabase },
-          { to: '/settings', label: 'Réglages', short: 'Réglages', icon: IconSettings },
         ]
       : []),
+    { to: '/settings', label: 'Réglages', short: 'Réglages', icon: IconSettings },
   ]
   const tabs = items.filter((it) => it.tab)
   const more = items.filter((it) => !it.tab)

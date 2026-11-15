@@ -17,7 +17,7 @@ import './quotes.css'
 export function QuotesPanel({ lead, canEdit }: { lead: BusinessDTO; canEdit: boolean }) {
   const toast = useToast()
   const qc = useQueryClient()
-  const quotes = useQuery({ queryKey: ['quotes', lead.id], queryFn: () => listQuotes(lead.id) })
+  const quotes = useQuery({ queryKey: ['quotes', lead.id], queryFn: () => listQuotes(lead.id), enabled: canEdit })
   const emailStatus = useQuery({ queryKey: ['email-status'], queryFn: getEmailStatus, staleTime: 5 * 60_000 })
   const [creating, setCreating] = useState(false)
   const [estimate, setEstimate] = useState<EstimateInput>(() => ({
@@ -95,6 +95,8 @@ export function QuotesPanel({ lead, canEdit }: { lead: BusinessDTO; canEdit: boo
                 <>
                   Total <strong className="num">{formatCurrency(priced.data.total)}</strong> <span className="muted">taxes incluses</span>
                 </>
+              ) : requiresQuote ? (
+                <span className="muted">Plus de 2 500 pi² : soumission sur mesure, non calculée en ligne.</span>
               ) : priced.isError ? (
                 <span className="text-danger">{errorMessage(priced.error)}</span>
               ) : (
@@ -113,7 +115,9 @@ export function QuotesPanel({ lead, canEdit }: { lead: BusinessDTO; canEdit: boo
         </div>
       )}
 
-      {quotes.isPending ? (
+      {!canEdit ? (
+        <p className="muted small">Les soumissions sont réservées aux appelants et aux administrateurs.</p>
+      ) : quotes.isPending ? (
         <SkeletonRows rows={2} height={32} />
       ) : quotes.isError ? (
         <ErrorState error={quotes.error} onRetry={() => void quotes.refetch()} />

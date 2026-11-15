@@ -550,7 +550,7 @@ export function handle(req: Req): Result {
       if (d.jobs.some((j) => j.source?.id === s.id && (j.status === 'RUNNING' || j.status === 'PENDING')))
         throw new HttpError(409, 'Une importation est déjà en cours pour cette source')
       const job: ScraperJobDTO = {
-        id: mockId('j'),
+        id: mockId('f'),
         source: { id: s.id, sourceName: s.sourceName, sourceType: s.sourceType, sourceUrl: s.sourceUrl },
         jobType: m[2] === 'upload' ? 'FULL_SYNC' : 'MANUAL_SCRAPE',
         status: 'PENDING',

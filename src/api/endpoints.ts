@@ -139,8 +139,8 @@ export const snoozeLead = (id: string, body: SnoozeRequest) =>
 export const getQualification = (id: string) => apiFetch<Qualification>(`/api/businesses/${id}/qualification`)
 export const patchQualification = (id: string, body: Qualification) =>
   apiFetch<Qualification>(`/api/businesses/${id}/qualification`, { method: 'PATCH', body })
-export const logCall = (id: string, body: LogCallRequest) =>
-  apiFetch<LogCallResponse>(`/api/leads/${id}/calls`, { method: 'POST', body })
+export const logCall = (id: string, body: LogCallRequest, opts: { keepalive?: boolean } = {}) =>
+  apiFetch<LogCallResponse>(`/api/leads/${id}/calls`, { method: 'POST', body, keepalive: opts.keepalive })
 export const getContacts = (businessId: string) => apiFetch<ContactDTO[]>(`/api/contacts/business/${businessId}`)
 export const getUpcomingContacts = (days = 7) => apiFetch<ContactDTO[]>('/api/contacts/upcoming', { query: { days } })
 

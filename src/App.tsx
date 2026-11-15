@@ -100,7 +100,7 @@ export default function App() {
                 <Route
                   path="settings/:tab?"
                   element={
-                    <RequireAuth roles={['ADMIN']}>
+                    <RequireAuth>
                       <SettingsPage />
                     </RequireAuth>
                   }

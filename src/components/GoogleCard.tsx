@@ -21,7 +21,8 @@ export function GoogleCard({ lead, canEdit }: { lead: BusinessDTO; canEdit: bool
       qc.setQueryData(['lead', l.id], l)
       void qc.invalidateQueries({ queryKey: ['leads'] })
       void qc.invalidateQueries({ queryKey: ['places-status'] })
-      toast(l.places && !l.places.expired ? 'Données Google mises à jour' : 'Aucune fiche Google correspondante', l.places && !l.places.expired ? 'success' : 'info')
+      const updated = !!l.places && !l.places.expired && l.places.fetchedAt !== lead.places?.fetchedAt
+      toast(updated ? 'Données Google mises à jour' : 'Aucune fiche Google correspondante : les données restent inchangées', updated ? 'success' : 'info')
     },
     onError: (e) => toast(errorMessage(e), 'error'),
   })
