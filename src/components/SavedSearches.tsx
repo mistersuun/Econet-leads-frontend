@@ -5,6 +5,7 @@ import type { DiscoverCategory, SavedSearch, SavedSearchFrequency } from '../api
 import { useAuth } from '../auth/AuthContext'
 import { CATEGORY_LABELS } from '../lib/discover'
 import { errorMessage } from '../lib/errors'
+import { dedupeMessage } from '../lib/messages'
 import { formatDate, formatRelative } from '../lib/format'
 import { EmptyState, ErrorState, SkeletonRows } from './States'
 import { useToast } from './Toast'
@@ -114,7 +115,7 @@ function SavedSearchRow({ s }: { s: SavedSearch }) {
       refresh()
     } else if (j.status === 'FAILED' || j.status === 'CANCELLED') {
       finished.current = j.id
-      toast(j.errors ?? 'La recherche a échoué', 'error')
+      toast(dedupeMessage(j.errors) ?? 'La recherche a échoué', 'error')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job.data])

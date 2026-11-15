@@ -65,7 +65,7 @@ export function SmsFollowUpSheet({ lead, defaultTemplate, defaultLanguage, onClo
 
   return (
     <>
-      <div className="sheet-backdrop" onClick={onClose} />
+      <div className="sheet-backdrop sms-backdrop" onClick={onClose} />
       <div className="sheet sms-sheet" role="dialog" aria-modal="true" aria-labelledby="sms-title">
         <div className="grabber" />
         <div className="sms-head">

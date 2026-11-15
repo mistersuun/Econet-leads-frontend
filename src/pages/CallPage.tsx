@@ -368,7 +368,7 @@ export default function CallPage() {
           ) : (
             <EmptyState title={session ? 'Plus aucun lead pour cette session' : 'La file d’appels est vide'} icon={<IconCheck size={22} />}>
               <p>{session ? 'Les filtres choisis n’ont plus de leads à appeler.' : 'Aucun suivi dû et aucun nouveau lead avec téléphone. Beau travail!'}</p>
-              <div className="row" style={{ justifyContent: 'center', marginTop: 12 }}>
+              <div className="row wrap" style={{ justifyContent: 'center', marginTop: 12 }}>
                 {session ? (
                   <button type="button" className="btn btn-sm" onClick={finishSession}>
                     Voir le résumé

@@ -289,6 +289,7 @@
 
 /* Horizontal bars (pipeline, outcomes) */
 .hbars {
+  min-width: 0;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -297,8 +298,9 @@
   gap: 2px;
 }
 .hbar-row {
+  min-width: 0;
   display: grid;
-  grid-template-columns: 120px 1fr 72px;
+  grid-template-columns: 120px minmax(0, 1fr) 72px;
   align-items: center;
   gap: 12px;
   padding: 8px;
@@ -313,7 +315,7 @@ a.hbar-row:hover {
 }
 .hbars.compact .hbar-row {
   padding: 4px 8px;
-  grid-template-columns: 112px 1fr 32px;
+  grid-template-columns: 112px minmax(0, 1fr) 32px;
   font-size: var(--text-sm);
 }
 .hbar-label {

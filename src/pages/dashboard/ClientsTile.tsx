@@ -18,7 +18,7 @@ export function ClientsTile() {
         <div className="tile-clients-figures">
           <div>
             {s ? <span className="tile-value num">{formatNumber(s.active)}</span> : <Skeleton height={40} width={64} />}
-            <span className="tile-foot">clients actifs</span>
+            <span className="tile-foot">{s && s.active <= 1 ? 'client actif' : 'clients actifs'}</span>
           </div>
           <div>
             {s ? <span className="tile-value num">{formatCurrency(s.monthlyRecurringRevenue)}</span> : <Skeleton height={40} width={120} />}

@@ -120,8 +120,10 @@ export default function DiscoverPage() {
             ))}
           </div>
         </div>
-        <SaveSearchPanel city={city} categories={cats} maxResults={limit} />
       </form>
+      <div className="card discover-save">
+        <SaveSearchPanel city={city} categories={cats} maxResults={limit} />
+      </div>
 
       <section className="card discover-results" aria-live="polite">
         {search.isPending ? (

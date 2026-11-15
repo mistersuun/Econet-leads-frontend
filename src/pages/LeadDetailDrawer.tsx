@@ -204,7 +204,7 @@ export default function LeadDetailDrawer() {
             <div className="stack">
               <section className="card card-pad">
                 <LeadCard lead={lead.data} />
-                <div className="row" style={{ marginTop: 24 }}>
+                <div className="row wrap" style={{ marginTop: 24 }}>
                   {!calling ? (
                     <button type="button" className="btn btn-primary" onClick={() => setCalling(true)} disabled={!canEdit} title={canEdit ? undefined : 'Lecture seule'}>
                       <IconPhone size={17} /> Appeler maintenant
