@@ -105,7 +105,14 @@ export default function App() {
                     </RequireAuth>
                   }
                 />
-                <Route path="clients" element={<ClientsPage />}>
+                <Route
+                  path="clients"
+                  element={
+                    <RequireAuth roles={['ADMIN', 'USER']}>
+                      <ClientsPage />
+                    </RequireAuth>
+                  }
+                >
                   <Route path=":id" element={<ClientDetailDrawer />} />
                 </Route>
                 <Route path="*" element={<NotFoundPage />} />

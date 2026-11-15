@@ -35,6 +35,7 @@ import { formatCurrency, formatDate, formatNumber, formatPercent } from '../lib/
 import { leadsHref } from '../lib/leadFilters'
 import { OUTCOME_META, PALETTE, STATUS_META } from '../lib/status'
 import { BestHoursWidget, ConversionByTypeWidget, FunnelWidget, LiveFeedWidget, TeamTodayWidget } from './dashboard/InsightWidgets'
+import { useAuth } from '../auth/AuthContext'
 import { ClientsTile } from './dashboard/ClientsTile'
 import './dashboard.css'
 
@@ -65,6 +66,7 @@ function useDashboardRange(): [RangePreset, DateRange, (p: RangePreset, r?: Date
 }
 
 export default function DashboardPage() {
+  const { hasRole } = useAuth()
   const [preset, range, setRange] = useDashboardRange()
   const prev = useMemo(() => previousRange(range), [range])
 
@@ -90,7 +92,7 @@ export default function DashboardPage() {
       </div>
 
       <Bento summary={summary} prev={prevSummary.data} range={range} />
-      <ClientsTile />
+      {hasRole('ADMIN', 'USER') && <ClientsTile />}
 
       <div style={{ marginTop: 16 }}>
         <UpcomingVisits />

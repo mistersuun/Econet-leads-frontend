@@ -315,7 +315,8 @@ a.hbar-row:hover {
 }
 .hbars.compact .hbar-row {
   padding: 4px 8px;
-  grid-template-columns: 112px minmax(0, 1fr) 32px;
+  grid-template-columns: minmax(64px, 9em) minmax(24px, 1fr) auto;
+  gap: 8px;
   font-size: var(--text-sm);
 }
 .hbar-label {
@@ -350,9 +351,19 @@ a.hbar-row:hover {
 /* Outcomes */
 .outcomes {
   display: grid;
-  grid-template-columns: 170px 1fr;
-  gap: 20px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
   align-items: center;
+  min-width: 0;
+}
+.outcomes > * {
+  min-width: 0;
+}
+@media (min-width: 900px) and (max-width: 1099px), (min-width: 1500px) {
+  .outcomes {
+    grid-template-columns: 170px minmax(0, 1fr);
+    gap: 20px;
+  }
 }
 .donut {
   display: flex;
@@ -396,11 +407,6 @@ a.hbar-row:hover {
 }
 .donut-legend strong {
   margin-left: auto;
-}
-@media (max-width: 560px) {
-  .outcomes {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* Breakdown */
@@ -562,7 +568,8 @@ a.hbar-row:hover {
 }
 .team-today li {
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) 80px auto;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  row-gap: 6px;
   align-items: center;
   gap: 12px;
   padding: 10px 0;
@@ -582,6 +589,8 @@ a.hbar-row:hover {
   min-width: 0;
 }
 .team-bar {
+  grid-column: 2 / -1;
+  grid-row: 2;
   height: 6px;
   border-radius: 3px;
   background: var(--fill);
@@ -603,14 +612,6 @@ a.hbar-row:hover {
 @keyframes pulse {
   50% {
     opacity: 0.35;
-  }
-}
-@media (max-width: 560px) {
-  .team-today li {
-    grid-template-columns: 24px minmax(0, 1fr) auto;
-  }
-  .team-bar {
-    display: none;
   }
 }
 
@@ -666,4 +667,30 @@ a.hbar-row:hover {
 }
 .feed-when {
   white-space: nowrap;
+}
+
+/* Narrow span-4 widgets: never let content push the card (and page) wider. */
+.dash-grid > .card {
+  min-width: 0;
+}
+.team-main .status-dot {
+  flex-wrap: wrap;
+}
+.team-main .lead-name,
+.team-main strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team-today .team-nums {
+  grid-column: 3;
+  grid-row: 1;
+}
+/* Leaderboard: drop the least important columns before the table scrolls. */
+@media (max-width: 1500px) and (min-width: 1181px) {
+  .dash-grid .span-6 .table th.hide-sm,
+  .dash-grid .span-6 .table td.hide-sm {
+    display: none;
+  }
 }
