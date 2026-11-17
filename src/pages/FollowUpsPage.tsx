@@ -6,6 +6,7 @@ import { listLeads } from '../api/endpoints'
 import type { BusinessDTO, LeadListParams } from '../api/types'
 import { EmptyState, ErrorState, SkeletonRows } from '../components/States'
 import { StatusBadge } from '../components/StatusBadge'
+import { UpcomingVisits } from '../components/UpcomingVisits'
 import { IconCheck, IconPhone } from '../components/icons'
 import { formatDate, formatPhone, formatRelative, telHref, toDate } from '../lib/format'
 import { useAuth } from '../auth/AuthContext'
@@ -69,6 +70,10 @@ export default function FollowUpsPage() {
             <IconPhone size={17} /> Lancer la file d’appels
           </Link>
         )}
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <UpcomingVisits />
       </div>
 
       {error ? (

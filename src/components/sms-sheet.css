@@ -1,0 +1,57 @@
+.sheet.sms-sheet {
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.sms-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sms-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.sms-preview {
+  padding: 12px 14px;
+  border-radius: var(--r-control);
+  background: var(--surface);
+  font-size: var(--text-md);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  min-height: 72px;
+}
+.sms-banner {
+  font-size: var(--text-sm);
+  color: var(--warning);
+  background: var(--warning-bg);
+  border-radius: var(--r-control);
+  padding: 10px 12px;
+  line-height: 1.5;
+}
+.sheet .sms-consent {
+  white-space: normal;
+  align-items: flex-start;
+}
+.sheet .sms-consent input {
+  margin-top: 2px;
+}
+.sms-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+@media (max-width: 480px) {
+  .sms-actions .btn {
+    flex: 1;
+  }
+}
+
+/* Above the lead drawer (z 45/46) when opened from it. */
+.sheet-backdrop.sms-backdrop { z-index: 60; }
+.sheet.sms-sheet { z-index: 61; }

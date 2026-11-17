@@ -6,12 +6,14 @@ import { getSummary } from '../api/endpoints'
 import { inboundMessage } from '../lib/inbound'
 import { AddLeadProvider, useAddLead } from './AddLead'
 import { useLiveEvent, useLiveInvalidate } from '../live/LiveProvider'
+import { formatCurrency, formatDate } from '../lib/format'
 import { ROLE_LABEL } from '../lib/status'
 import { NotificationsBell } from './NotificationsBell'
 import { SkeletonRows } from './States'
 import { TeamPresence } from './TeamPresence'
 import { useToast } from './Toast'
 import {
+  IconBriefcase,
   IconCalendarClock,
   IconCompass,
   IconDashboard,
@@ -89,6 +91,13 @@ function LayoutShell() {
       void qc.invalidateQueries({ queryKey: ['notifications'] })
       toast(inboundMessage({ leadName, kind }, e.data), 'info', { sticky: true, action: { label: 'Appeler', onClick: () => navigate(`/call?leadId=${leadId}`) } })
     }
+    if (e.type === 'quote.accepted' && user?.role !== 'VIEWER') {
+      // A client accepted a quote online: sticky, one tap to open the lead.
+      toast(`Soumission acceptée : ${e.data.leadName} · ${formatCurrency(e.data.total)}`, 'success', { sticky: true, action: { label: 'Ouvrir', onClick: () => navigate(`/leads/${e.data.leadId}`) } })
+    }
+    if (e.type === 'visit.booked' && user?.role !== 'VIEWER') {
+      toast(`Visite réservée : ${e.data.leadName} · ${formatDate(e.data.startsAt, "EEE d MMM 'à' HH'h'mm")}`, 'success', { sticky: true, action: { label: 'Ouvrir', onClick: () => navigate(`/leads/${e.data.leadId}`) } })
+    }
   })
   const overdue = (summary.data?.followUpsOverdue ?? 0) + (summary.data?.followUpsDue ?? 0)
   const toEnrich = summary.data?.toEnrich ?? 0
@@ -102,6 +111,7 @@ function LayoutShell() {
     { to: '/tenders', label: 'Appels d’offres', short: 'Offres', icon: IconFileText },
     ...(hasRole('ADMIN', 'USER')
       ? [
+          { to: '/clients', label: 'Clients', short: 'Clients', icon: IconBriefcase },
           { to: '/import', label: 'Importer', short: 'Importer', icon: IconUpload },
           { to: '/discover', label: 'Trouver des entreprises', short: 'Trouver', icon: IconCompass },
         ]
@@ -109,9 +119,9 @@ function LayoutShell() {
     ...(hasRole('ADMIN')
       ? [
           { to: '/sources', label: 'Sources', short: 'Sources', icon: IconDatabase },
-          { to: '/settings', label: 'Réglages', short: 'Réglages', icon: IconSettings },
         ]
       : []),
+    { to: '/settings', label: 'Réglages', short: 'Réglages', icon: IconSettings },
   ]
   const tabs = items.filter((it) => it.tab)
   const more = items.filter((it) => !it.tab)

@@ -1,3 +1,4 @@
+import { UpcomingVisits } from '../components/UpcomingVisits'
 import { useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, type UseQueryResult } from '@tanstack/react-query'
@@ -34,6 +35,8 @@ import { formatCurrency, formatDate, formatNumber, formatPercent } from '../lib/
 import { leadsHref } from '../lib/leadFilters'
 import { OUTCOME_META, PALETTE, STATUS_META } from '../lib/status'
 import { BestHoursWidget, ConversionByTypeWidget, FunnelWidget, LiveFeedWidget, TeamTodayWidget } from './dashboard/InsightWidgets'
+import { useAuth } from '../auth/AuthContext'
+import { ClientsTile } from './dashboard/ClientsTile'
 import './dashboard.css'
 
 const SERIES = {
@@ -63,6 +66,7 @@ function useDashboardRange(): [RangePreset, DateRange, (p: RangePreset, r?: Date
 }
 
 export default function DashboardPage() {
+  const { hasRole } = useAuth()
   const [preset, range, setRange] = useDashboardRange()
   const prev = useMemo(() => previousRange(range), [range])
 
@@ -88,6 +92,11 @@ export default function DashboardPage() {
       </div>
 
       <Bento summary={summary} prev={prevSummary.data} range={range} />
+      {hasRole('ADMIN', 'USER') && <ClientsTile />}
+
+      <div style={{ marginTop: 16 }}>
+        <UpcomingVisits />
+      </div>
 
       <div className="grid dash-grid" style={{ marginTop: 16 }}>
         <ActivityWidget range={range} className="span-8" />

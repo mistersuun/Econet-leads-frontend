@@ -1,0 +1,32 @@
+.availability .av-day {
+  border: 0;
+  border-top: 1px solid var(--hairline);
+  margin: 0;
+  padding: 12px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+.availability legend {
+  font-weight: 600;
+  padding: 0;
+  float: left;
+  width: 100%;
+}
+.availability .av-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.availability .av-row .input,
+.availability .av-row .select {
+  height: 36px;
+  width: auto;
+}
+@media (max-width: 560px) {
+  .availability .av-row .btn {
+    min-height: 40px;
+  }
+}

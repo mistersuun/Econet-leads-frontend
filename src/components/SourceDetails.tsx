@@ -1,4 +1,5 @@
 import type { BusinessDTO } from '../api/types'
+import { displayValue } from '../lib/messages'
 import './lead-card.css'
 
 /** Source-specific facts (permit cost, NEQ, sector…) as a quiet definition list. */
@@ -12,7 +13,7 @@ export function SourceDetails({ lead, caption = true, className = '' }: { lead: 
         {entries.map(([k, v]) => (
           <div key={k}>
             <dt>{k}</dt>
-            <dd className={/^[\d\s.,$%-]+$/.test(String(v)) ? 'num' : undefined}>{String(v)}</dd>
+            <dd className={/^[\d\s.,$%-]+$/.test(String(v)) ? 'num' : undefined}>{displayValue(String(v))}</dd>
           </div>
         ))}
       </dl>

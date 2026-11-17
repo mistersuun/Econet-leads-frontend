@@ -1,6 +1,12 @@
 import { apiDownload, apiFetch, apiUpload, type Query, type UploadProgress } from './client'
 import type {
   ActivityPoint,
+  ClientDTO,
+  ClientPatch,
+  ClientStatus,
+  ClientsSummary,
+  ReviewConfig,
+  ReviewResult,
   AppNotification,
   BestHourCell,
   CallScript,
@@ -51,6 +57,7 @@ import type {
   LogCallResponse,
   OutcomeCount,
   Page,
+  PasswordChange,
   PipelineEntry,
   ScraperJobDTO,
   StatusUpdateRequest,
@@ -58,7 +65,12 @@ import type {
   TenderListParams,
   TenderSummary,
   TenderUpdateRequest,
+  UserPreferences,
+  WeeklyReportPreview,
 } from './types'
+import type { IntegrationsStatus, SendSmsRequest, SmsTemplateKey, TestAlertResult } from './types'
+
+import type { AvailabilityWindow, BookingLink, CreateQuoteRequest, Quote, Visit, VisitStatus } from './types'
 
 // ---- Auth
 export const login = (username: string, password: string) =>
@@ -127,8 +139,8 @@ export const snoozeLead = (id: string, body: SnoozeRequest) =>
 export const getQualification = (id: string) => apiFetch<Qualification>(`/api/businesses/${id}/qualification`)
 export const patchQualification = (id: string, body: Qualification) =>
   apiFetch<Qualification>(`/api/businesses/${id}/qualification`, { method: 'PATCH', body })
-export const logCall = (id: string, body: LogCallRequest) =>
-  apiFetch<LogCallResponse>(`/api/leads/${id}/calls`, { method: 'POST', body })
+export const logCall = (id: string, body: LogCallRequest, opts: { keepalive?: boolean } = {}) =>
+  apiFetch<LogCallResponse>(`/api/leads/${id}/calls`, { method: 'POST', body, keepalive: opts.keepalive })
 export const getContacts = (businessId: string) => apiFetch<ContactDTO[]>(`/api/contacts/business/${businessId}`)
 export const getUpcomingContacts = (days = 7) => apiFetch<ContactDTO[]>('/api/contacts/upcoming', { query: { days } })
 
@@ -236,3 +248,62 @@ export const discoverOsm = (body: DiscoverRequest, signal?: AbortSignal) =>
 export const importOsm = (candidates: DiscoverCandidate[], assignToMe: boolean) =>
   apiFetch<DiscoverImportResponse>('/api/discover/osm/import', { method: 'POST', body: { candidates, assignToMe } })
 export const setUserTargets = updateUserTargets
+
+// ---- Accounts: password change (self) and reset (ADMIN)
+export const changeMyPassword = (body: PasswordChange) => apiFetch<void>('/api/me/password', { method: 'POST', body })
+export const resetUserPassword = (userId: string, newPassword: string) =>
+  apiFetch<void>(`/api/users/${userId}/password`, { method: 'PUT', body: { newPassword } })
+// ---- Intégrations, alertes et textos (P2)
+export const getIntegrationsStatus = () => apiFetch<IntegrationsStatus>('/api/integrations/status')
+export const sendTestAlert = () => apiFetch<TestAlertResult>('/api/integrations/test-alert', { method: 'POST' })
+export const previewFollowUpSms = (leadId: string, templateKey: SmsTemplateKey, language: string, signal?: AbortSignal) =>
+  apiFetch<{ body: string }>(`/api/leads/${leadId}/sms/preview`, { query: { templateKey, language }, signal })
+export const sendFollowUpSms = (leadId: string, body: SendSmsRequest) =>
+  apiFetch<{ status: string }>(`/api/leads/${leadId}/sms`, { method: 'POST', body })
+
+// ---- Google Places enrichment and saved searches
+import type { PlacesStatus, SavedSearch, SavedSearchInput } from './types'
+
+export const getPlacesStatus = () => apiFetch<PlacesStatus>('/api/places/status')
+export const enrichLeadPlaces = (id: string) => apiFetch<BusinessDTO>(`/api/businesses/${id}/enrich/places`, { method: 'POST' })
+export const enrichLeadsPlaces = (ids: string[]) =>
+  apiFetch<ScraperJobDTO>('/api/businesses/enrich/places', { method: 'POST', body: { ids } })
+export const listSavedSearches = () => apiFetch<SavedSearch[]>('/api/saved-searches')
+export const createSavedSearch = (body: SavedSearchInput) => apiFetch<SavedSearch>('/api/saved-searches', { method: 'POST', body })
+export const updateSavedSearch = (id: string, body: SavedSearchInput) =>
+  apiFetch<SavedSearch>(`/api/saved-searches/${id}`, { method: 'PUT', body })
+export const deleteSavedSearch = (id: string) => apiFetch<void>(`/api/saved-searches/${id}`, { method: 'DELETE' })
+export const runSavedSearch = (id: string) => apiFetch<ScraperJobDTO>(`/api/saved-searches/${id}/run`, { method: 'POST' })
+
+// ---- Weekly coaching email and preferences
+export const getMyPreferences = () => apiFetch<UserPreferences>('/api/me/preferences')
+export const updateMyPreferences = (body: UserPreferences) => apiFetch<UserPreferences>('/api/me/preferences', { method: 'PUT', body })
+export const previewWeeklyReport = () => apiFetch<WeeklyReportPreview>('/api/reports/weekly/preview', { method: 'POST' })
+export const sendWeeklyReportNow = () => apiFetch<{ status: string }>('/api/reports/weekly/send-now', { method: 'POST' })
+
+// ---- Quotes and visit booking
+export const createQuote = (leadId: string, body: CreateQuoteRequest) =>
+  apiFetch<Quote>(`/api/leads/${leadId}/quotes`, { method: 'POST', body })
+export const listQuotes = (leadId: string) => apiFetch<Quote[]>(`/api/leads/${leadId}/quotes`)
+export const sendQuote = (quoteId: string, to?: string) =>
+  apiFetch<Quote>(`/api/quotes/${quoteId}/send`, { method: 'POST', body: to ? { to } : {} })
+export const downloadQuotePdf = (quoteId: string) => apiDownload(`/api/quotes/${quoteId}/pdf`)
+export const createBookingLink = (leadId: string) => apiFetch<BookingLink>(`/api/leads/${leadId}/booking-links`, { method: 'POST' })
+export const listVisits = (from?: string, to?: string) => apiFetch<Visit[]>('/api/visits', { query: { from, to } })
+export const updateVisitStatus = (id: string, status: VisitStatus) =>
+  apiFetch<Visit>(`/api/visits/${id}`, { method: 'PATCH', body: { status } })
+export const getAvailability = () => apiFetch<AvailabilityWindow[]>('/api/availability')
+export const saveAvailability = (windows: AvailabilityWindow[]) =>
+  apiFetch<AvailabilityWindow[]>('/api/availability', { method: 'PUT', body: windows })
+
+// ---- Clients after the sale
+export const listClients = (p: { status?: ClientStatus; businessId?: string } = {}) =>
+  apiFetch<ClientDTO[]>('/api/clients', { query: { status: p.status, businessId: p.businessId } })
+export const getClient = (id: string) => apiFetch<ClientDTO>(`/api/clients/${id}`)
+export const patchClient = (id: string, body: ClientPatch) => apiFetch<ClientDTO>(`/api/clients/${id}`, { method: 'PATCH', body })
+export const deleteClient = (id: string) => apiFetch<void>(`/api/clients/${id}`, { method: 'DELETE' })
+export const clientFirstCleaningDone = (id: string) => apiFetch<ClientDTO>(`/api/clients/${id}/first-cleaning-done`, { method: 'POST' })
+export const clientReviewRequest = (id: string, channel: 'email' | 'link') =>
+  apiFetch<ReviewResult>(`/api/clients/${id}/review-request`, { method: 'POST', body: { channel } })
+export const getClientReviewConfig = () => apiFetch<ReviewConfig>('/api/clients/review-config')
+export const getClientsSummary = () => apiFetch<ClientsSummary>('/api/dashboard/clients')

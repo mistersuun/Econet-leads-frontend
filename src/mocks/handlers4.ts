@@ -236,7 +236,7 @@ function startImport(d: Db, user: MockUser, importId: string, req: ImportRunRequ
     d.sources.push(source)
   }
   const job: ScraperJobDTO = {
-    id: mockId('j'),
+    id: mockId('f'),
     source: { id: source.id, sourceName: source.sourceName, sourceType: source.sourceType, sourceUrl: null },
     jobType: 'MANUAL_SCRAPE',
     status: 'PENDING',
@@ -436,14 +436,14 @@ let inboundCount = 0
 /** A new request from the website: INTERESTED, due now, so it tops the call queue. Returns what to broadcast. */
 export function createInbound(d: Db, now: Date): BusinessDTO {
   const i = inboundCount++
-  const kind: 'booking' | 'contact' = i % 3 === 2 ? 'contact' : 'booking'
+  const kind: 'booking' | 'contact' | 'estimate' = i % 3 === 2 ? 'contact' : i % 4 === 3 ? 'estimate' : 'booking'
   const commercial = i % 4 === 1
   const name = INBOUND_PEOPLE[i % INBOUND_PEOPLE.length]
   const estimate = [261, 189, 420, 335, 148, 590][i % 6]
   const due = new Date(now.getTime() - 1000)
   const lead = newLead(now, {
     businessName: name,
-    businessType: kind === 'contact' ? 'Demande web – contact' : commercial ? 'Demande web – commercial' : 'Demande web – résidentiel',
+    businessType: kind === 'contact' ? 'Demande web – contact' : kind === 'estimate' ? 'Demande web – estimation' : commercial ? 'Demande web – commercial' : 'Demande web – résidentiel',
     phone: `514555${String(1200 + i * 37).padStart(4, '0')}`,
     email: `${name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z]+/g, '.')}@courriel.example`,
     addressStreet: `${120 + i * 17}, ${INBOUND_STREETS[i % INBOUND_STREETS.length]}`,
@@ -452,9 +452,11 @@ export function createInbound(d: Db, now: Date): BusinessDTO {
     externalId: `${kind}:${1000 + i}`,
     leadStatus: 'INTERESTED',
     nextFollowUpAt: isoLocal(due),
-    estimatedValue: kind === 'booking' ? estimate : null,
+    estimatedValue: kind === 'contact' ? null : estimate,
     sourceDetails:
-      kind === 'booking'
+      kind === 'estimate'
+        ? { Service: 'Résidentiel', Superficie: '800 à 1500 pi²', Type: 'Maison unifamiliale', Options: 'Vitres intérieures, Four', Fréquence: 'Aux 2 semaines', Estimation: `${estimate} $`, Langue: 'fr' }
+        : kind === 'booking'
         ? { Service: commercial ? 'Entretien commercial' : 'Ménage résidentiel', 'Date souhaitée': 'samedi 10:00', Fréquence: 'aux deux semaines', Estimation: `${estimate} $` }
         : { Service: 'Nettoyage après rénovation', Message: 'Bonjour, j’aimerais une soumission pour un 4 1/2.' },
   })
@@ -463,7 +465,7 @@ export function createInbound(d: Db, now: Date): BusinessDTO {
   d.leads.push(lead)
   d.contacts.push({
     id: mockId('c'), businessId: lead.id, businessName: lead.businessName, contactDate: isoLocal(now), contactType: 'NOTE',
-    contactStatus: 'NOTE', contactPerson: null, notes: kind === 'booking' ? 'Demande de réservation reçue sur le site' : 'Demande de contact reçue sur le site',
+    contactStatus: 'NOTE', contactPerson: null, notes: kind === 'booking' ? 'Demande de réservation reçue sur le site' : kind === 'estimate' ? 'Estimation demandée sur le site' : 'Demande de contact reçue sur le site',
     nextAction: 'Rappeler', nextActionDate: lead.nextFollowUpAt, userId: null, username: null, outcome: null, createdAt: isoLocal(now),
   })
   emit('lead.inbound', { leadId: lead.id, leadName: lead.businessName, kind, at: isoLocal(now) })

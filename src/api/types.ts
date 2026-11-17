@@ -107,6 +107,8 @@ export interface BusinessDTO {
   qualification?: Qualification | null
   /** Addendum 3: who holds the claim on this lead right now (queue items). */
   claimedBy?: { userId: string; username: string } | null
+  /** Google data (rating, reviews, hours...), absent when the lead was never enriched. */
+  places?: PlacesData | null
 }
 
 // ---- Addendum 3: qualification
@@ -211,6 +213,8 @@ export interface ContactDTO {
   createdAt: string
   /** Addendum 3: call length, when the caller used the timer. */
   durationSeconds?: number | null
+  /** Objections heard on the call (at most 5, each at most 80 characters). */
+  objections?: string[] | null
 }
 
 export interface LogCallRequest {
@@ -221,6 +225,8 @@ export interface LogCallRequest {
   estimatedValue?: number
   /** Addendum 3 */
   durationSeconds?: number
+  /** At most 5 short strings (80 characters each). */
+  objections?: string[]
   qualification?: Qualification
   /** Only for NO_ANSWER / VOICEMAIL / CALLBACK: sets nextFollowUpAt without changing status. */
   snoozeUntil?: string
@@ -434,8 +440,8 @@ export interface TenderSummary {
 
 // ---- Addendum 3: scripts
 
-export type ScriptSectionKey = 'opening' | 'questions' | 'objections' | 'closing'
-export const SCRIPT_SECTION_KEYS: readonly ScriptSectionKey[] = ['opening', 'questions', 'objections', 'closing']
+export type ScriptSectionKey = 'opening' | 'questions' | 'objections' | 'closing' | 'voicemail'
+export const SCRIPT_SECTION_KEYS: readonly ScriptSectionKey[] = ['opening', 'questions', 'objections', 'closing', 'voicemail']
 
 export interface ScriptSection {
   key: ScriptSectionKey
@@ -621,7 +627,18 @@ export interface SendEmailResponse {
 
 // ---- Addendum 3: notifications
 
-export type NotificationKind = 'follow_up_due' | 'follow_up_overdue' | 'claim_expired' | 'tender_closing' | 'inbound_request'
+export type NotificationKind =
+  | 'follow_up_due'
+  | 'follow_up_overdue'
+  | 'claim_expired'
+  | 'tender_closing'
+  | 'inbound_request'
+  | 'saved_search'
+  | 'quote_accepted'
+  | 'visit_booked'
+  | 'contract_renewal'
+  | 'review_request_due'
+  | 'visit_due'
 
 export interface AppNotification {
   id: string
@@ -662,7 +679,11 @@ export interface LiveEventMap {
   'target.progress': { userId: string; callsToday: number; conversationsToday: number; target: number; conversationTarget?: number }
   'tender.updated': { tenderId: string; status: TenderStatus }
   /** Addendum 4: a request arrived from the website. */
-  'lead.inbound': { leadId: string; leadName: string; kind: 'booking' | 'contact'; at: string; businessType?: string | null; estimatedValue?: number | null }
+  'lead.inbound': { leadId: string; leadName: string; kind: 'booking' | 'contact' | 'estimate'; at: string; businessType?: string | null; estimatedValue?: number | null }
+  /** A prospect accepted a quote through its public link. */
+  'quote.accepted': { leadId: string; leadName: string; quoteId: string; total: number }
+  /** A prospect booked a visit through a booking link (startsAt: Montréal wall-clock). */
+  'visit.booked': { leadId: string; leadName: string; startsAt: string }
 }
 
 export type LiveEventType = keyof LiveEventMap
@@ -676,6 +697,8 @@ export const LIVE_EVENT_TYPES: readonly LiveEventType[] = [
   'target.progress',
   'tender.updated',
   'lead.inbound',
+  'quote.accepted',
+  'visit.booked',
 ]
 
 export type LiveEvent = {
@@ -786,4 +809,243 @@ export interface DiscoverImportResponse {
   added: number
   skipped: number
   leads: BusinessDTO[]
+}
+
+// ---- Accounts (P1)
+export interface PasswordChange {
+  currentPassword: string
+  newPassword: string
+}
+
+// ---- Intégrations, alertes et textos (P2)
+export interface IntegrationsStatus {
+  smtp: boolean
+  sms: boolean
+  alertsPhone: boolean
+  alertsEmail: boolean
+  places: boolean
+  placesUsedToday: number
+  placesDailyLimit: number
+  googleReviewUrl: boolean
+  websiteDb: boolean
+  publicUrl: string
+  crmUrl: string
+}
+
+export type SmsTemplateKey = 'missed_call' | 'after_voicemail' | 'quote_followup'
+
+export interface SendSmsRequest {
+  templateKey: SmsTemplateKey
+  language: ScriptLanguage
+  consent: boolean
+}
+
+export interface TestAlertResult {
+  smsConfigured: boolean
+  smsTargets: number
+  smsSent: number
+  emailConfigured: boolean
+  emailTargets: number
+  emailSent: number
+}
+
+// ---- Google Places enrichment and saved searches
+
+export interface PlacesSignal {
+  text: string
+  rating: number | null
+  publishedAt: string | null
+}
+
+/**
+ * Google data stored on a lead. After 30 days only `placeId` and `fetchedAt` remain and
+ * `expired` is true (Google's caching terms): the other fields are then absent.
+ */
+export interface PlacesData {
+  placeId: string | null
+  rating?: number | null
+  reviewCount?: number | null
+  mapsUrl?: string | null
+  website?: string | null
+  phone?: string | null
+  openingHours?: string[]
+  businessStatus?: string | null
+  cleanlinessSignals?: PlacesSignal[]
+  fetchedAt: string
+  expired?: boolean
+}
+
+export interface PlacesStatus {
+  configured: boolean
+  usedToday: number
+  dailyLimit: number
+  attribution: string
+}
+
+export type SavedSearchFrequency = 'monthly' | 'weekly'
+
+export interface SavedSearch {
+  id: string
+  name: string
+  city: string
+  categories: DiscoverCategory[]
+  maxResults: number
+  frequency: SavedSearchFrequency
+  assignToUserId: string | null
+  assignToName: string | null
+  active: boolean
+  lastRunAt: string | null
+  lastAdded: number | null
+  nextRunAt: string | null
+  createdByName: string | null
+  createdAt: string
+}
+
+export interface SavedSearchInput {
+  name: string
+  city: string
+  categories: DiscoverCategory[]
+  maxResults?: number
+  frequency: SavedSearchFrequency
+  assignToUserId?: string | null
+  active?: boolean
+}
+
+// ---- Weekly coaching email
+export interface UserPreferences {
+  weeklyReport: boolean
+}
+
+export interface WeeklyReportPreview {
+  subject: string
+  text: string
+  html: string
+}
+
+// ---- Quotes (soumissions) and visit booking
+
+export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'declined' | 'expired'
+
+export interface QuoteLine {
+  id: string
+  label: string
+  /** Negative for the frequency discount. */
+  amount: number
+}
+
+export interface Quote {
+  id: string
+  leadId: string
+  /** Q-YYYY-NNNN */
+  number: string
+  language: ScriptLanguage
+  input: Record<string, unknown>
+  lines: QuoteLine[]
+  subtotal: number
+  tax: number
+  total: number
+  status: QuoteStatus
+  validUntil: string
+  /** Public page the prospect uses to review and accept. */
+  publicUrl: string
+  pdfUrl: string
+  createdBy?: string | null
+  createdAt: string
+  sentAt?: string | null
+  acceptedAt?: string | null
+  acceptedName?: string | null
+  declineReason?: string | null
+}
+
+export interface CreateQuoteRequest {
+  estimate: EstimateInput
+  language?: ScriptLanguage
+}
+
+/** POST /api/leads/{id}/booking-links: single use, 14 days. */
+export interface BookingLink {
+  url: string
+  expiresAt: string
+}
+
+export type VisitStatus = 'booked' | 'done' | 'cancelled'
+
+export interface Visit {
+  id: string
+  leadId: string
+  leadName: string
+  leadPhone?: string | null
+  leadAddress?: string | null
+  startsAt: string
+  endsAt: string
+  status: VisitStatus
+  bookedVia: 'link' | 'manual'
+}
+
+/** One weekly window of availability (weekday 1 = lundi … 7 = dimanche, times HH:mm, heure de Montréal). */
+export interface AvailabilityWindow {
+  id?: string
+  weekday: number
+  startTime: string
+  endTime: string
+  slotMinutes: number
+  active: boolean
+}
+
+// ---- Clients after the sale
+
+export type ClientFrequency = 'weekly' | 'bi-weekly' | 'monthly' | 'one-time'
+export type ClientStatus = 'active' | 'paused' | 'ended'
+
+export interface ClientDTO {
+  id: string
+  businessId: string
+  businessName: string
+  city: string | null
+  phone: string | null
+  email: string | null
+  service: string
+  frequency: ClientFrequency
+  pricePerVisit: number
+  /** Price per visit × visits per month (0 for one-time). */
+  monthlyValue: number
+  startDate: string
+  contractEndDate: string | null
+  nextVisitAt: string | null
+  status: ClientStatus
+  firstCleaningDoneAt: string | null
+  reviewRequestedAt: string | null
+  notes: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ClientPatch {
+  service?: string
+  frequency?: ClientFrequency
+  pricePerVisit?: number
+  startDate?: string
+  contractEndDate?: string | null
+  nextVisitAt?: string | null
+  status?: ClientStatus
+  notes?: string | null
+}
+
+export interface ClientsSummary {
+  active: number
+  monthlyRecurringRevenue: number
+  renewalsNext30Days: number
+  reviewsPending: number
+}
+
+export interface ReviewConfig {
+  googleReviewUrl: boolean
+  smtp: boolean
+}
+
+export interface ReviewResult {
+  channel: 'email' | 'link'
+  url: string
+  message: string
+  requestedAt: string
 }

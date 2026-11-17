@@ -92,11 +92,12 @@ export function useLiveInvalidate(): void {
           ['contacts', e.data.leadId],
           ['followups'],
           ['pipeline'],
+          ['clients'],
         )
         if (e.data.userId !== me) invalidate(['queue'])
         break
       case 'lead.updated':
-        invalidate(['lead', e.data.leadId], ['leads'], ['followups'], ['pipeline'], ['notifications'], ['summary'])
+        invalidate(['lead', e.data.leadId], ['leads'], ['followups'], ['pipeline'], ['notifications'], ['summary'], ['clients'])
         break
       case 'lead.claimed':
       case 'lead.released':
@@ -121,6 +122,13 @@ export function useLiveInvalidate(): void {
         break
       case 'tender.updated':
         invalidate(['tenders'], ['tender-summary'], ['tender', e.data.tenderId], ['notifications'])
+        break
+      case 'quote.accepted':
+        // Accepting a quote moves the lead to WON, which also creates its client.
+        invalidate(['quotes', e.data.leadId], ['lead', e.data.leadId], ['leads'], ['contacts', e.data.leadId], ['notifications'], ['summary'], ['pipeline'], ['clients'])
+        break
+      case 'visit.booked':
+        invalidate(['visits'], ['lead', e.data.leadId], ['leads'], ['contacts', e.data.leadId], ['followups'], ['notifications'])
         break
       default:
         break

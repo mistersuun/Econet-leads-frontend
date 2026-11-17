@@ -14,6 +14,12 @@ const KIND_LABEL: Record<AppNotification['kind'], string> = {
   claim_expired: 'Réservation expirée',
   tender_closing: 'Appel d’offres',
   inbound_request: 'Demande du site',
+  saved_search: 'Recherche enregistrée',
+  quote_accepted: 'Soumission acceptée',
+  visit_booked: 'Visite réservée',
+  contract_renewal: 'Renouvellement de contrat',
+  review_request_due: 'Avis Google à demander',
+  visit_due: 'Visite client aujourd’hui',
 }
 const KIND_COLOR: Record<AppNotification['kind'], string> = {
   follow_up_due: '#c98a1f',
@@ -21,7 +27,14 @@ const KIND_COLOR: Record<AppNotification['kind'], string> = {
   claim_expired: '#a1a1a6',
   tender_closing: '#4a72b0',
   inbound_request: '#8a5fa8',
+  saved_search: '#4a8f7a',
+  quote_accepted: '#2f7a5c',
+  visit_booked: '#4a72b0',
+  contract_renewal: '#2f7a5c',
+  review_request_due: '#c98a1f',
+  visit_due: '#4a72b0',
 }
+const CLIENT_KINDS: AppNotification['kind'][] = ['contract_renewal', 'review_request_due', 'visit_due']
 
 type Permission = 'default' | 'granted' | 'denied' | 'unsupported'
 
@@ -152,7 +165,7 @@ export function NotificationsBell({ compact = false }: { compact?: boolean }) {
                       <div className="notif-body small muted">{n.body}</div>
                     </div>
                     <div className="notif-actions">
-                      {n.leadId && (
+                      {n.leadId && !CLIENT_KINDS.includes(n.kind) && (
                         <button type="button" className="btn btn-sm" onClick={() => go(`/call?leadId=${n.leadId}`)} title="Appeler maintenant">
                           <IconPhone size={14} /> Appeler
                         </button>
@@ -160,7 +173,19 @@ export function NotificationsBell({ compact = false }: { compact?: boolean }) {
                       <button
                         type="button"
                         className="btn btn-ghost btn-sm"
-                        onClick={() => go(n.leadId ? `/leads/${n.leadId}` : n.tenderId ? `/tenders/${n.tenderId}` : '/follow-ups')}
+                        onClick={() =>
+                          go(
+                            n.leadId && CLIENT_KINDS.includes(n.kind)
+                              ? `/clients?lead=${n.leadId}`
+                              : n.leadId
+                                ? `/leads/${n.leadId}`
+                                : n.tenderId
+                                  ? `/tenders/${n.tenderId}`
+                                  : n.kind === 'saved_search'
+                                    ? '/discover'
+                                    : '/follow-ups',
+                          )
+                        }
                       >
                         Ouvrir
                       </button>

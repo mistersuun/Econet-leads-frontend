@@ -5,6 +5,7 @@ import { CALL_OUTCOMES, type BusinessDTO, type CallOutcome, type LogCallRequest,
 import { defaultFollowUp } from '../lib/dates'
 import { errorMessage } from '../lib/errors'
 import { toApiDateTime, toInputDateTime } from '../lib/format'
+import { addObjection, MAX_OBJECTIONS, MAX_OBJECTION_LENGTH } from '../lib/objections'
 import { OUTCOME_META } from '../lib/status'
 import { useToast } from './Toast'
 import { IconX } from './icons'
@@ -24,6 +25,12 @@ interface Props {
   onOutcomeChosen?: (outcome: CallOutcome) => void
   /** Denser layout for the call screen's outcome column. */
   compact?: boolean
+  /** Objection chips (from the script's objections section); omitted = no objections block. */
+  objectionOptions?: string[]
+  /** Voicemail script, already filled in, shown next to the "Messagerie" outcome. */
+  voicemailText?: string
+  /** Picks an outcome from outside (quick-outcome sheet). A new nonce re-applies it. */
+  preset?: { outcome: CallOutcome | null; nonce: number } | null
 }
 
 function isTypingTarget(el: EventTarget | null) {
@@ -31,7 +38,7 @@ function isTypingTarget(el: EventTarget | null) {
   return el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)
 }
 
-export function OutcomeForm({ lead, disabled, shortcuts, submitLabel = 'Enregistrer l’appel', onLogged, extraActions, extras, onOutcomeChosen, compact }: Props) {
+export function OutcomeForm({ lead, disabled, shortcuts, submitLabel = 'Enregistrer l’appel', onLogged, extraActions, extras, onOutcomeChosen, compact, objectionOptions, voicemailText, preset }: Props) {
   const id = useId()
   const toast = useToast()
   const qc = useQueryClient()
@@ -42,6 +49,16 @@ export function OutcomeForm({ lead, disabled, shortcuts, submitLabel = 'Enregist
   const [followUp, setFollowUp] = useState('')
   const [followUpTouched, setFollowUpTouched] = useState(false)
   const [value, setValue] = useState(lead.estimatedValue != null ? String(lead.estimatedValue) : '')
+  const [objections, setObjections] = useState<string[]>([])
+  const [otherObjection, setOtherObjection] = useState('')
+  const [seenPreset, setSeenPreset] = useState(0)
+
+  const toggleObjection = (label: string) =>
+    setObjections((list) => (list.some((o) => o.toLowerCase() === label.toLowerCase()) ? list.filter((o) => o.toLowerCase() !== label.toLowerCase()) : addObjection(list, label)))
+  const addOther = () => {
+    setObjections((list) => addObjection(list, otherObjection))
+    setOtherObjection('')
+  }
 
   const choose = (o: CallOutcome) => {
     setOutcome(o)
@@ -60,6 +77,7 @@ export function OutcomeForm({ lead, disabled, shortcuts, submitLabel = 'Enregist
         ...(extras?.() ?? {}),
         outcome: outcome!,
         notes: notes.trim() || undefined,
+        objections: objections.length ? objections : undefined,
         contactPerson: contactPerson.trim() || undefined,
         nextFollowUpAt: followUp ? toApiDateTime(new Date(followUp)) : undefined,
         estimatedValue: meta.withValue && v !== undefined && Number.isFinite(v) ? v : undefined,
@@ -90,6 +108,15 @@ export function OutcomeForm({ lead, disabled, shortcuts, submitLabel = 'Enregist
     submitRef.current = submit
     chooseRef.current = choose
   })
+  // An outcome picked from outside (quick-outcome sheet): select it and bring the form into view.
+  useEffect(() => {
+    if (!preset || preset.nonce === seenPreset) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- apply the external preset once per nonce
+    setSeenPreset(preset.nonce)
+    if (preset.outcome) chooseRef.current(preset.outcome)
+    if (typeof formRef.current?.scrollIntoView === 'function') formRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [preset, seenPreset])
+
   useEffect(() => {
     if (!shortcuts || disabled) return
     const onKey = (e: KeyboardEvent) => {
@@ -140,6 +167,52 @@ export function OutcomeForm({ lead, disabled, shortcuts, submitLabel = 'Enregist
           )
         })}
       </fieldset>
+
+      {outcome === 'VOICEMAIL' && voicemailText && (
+        <details className="voicemail-hint" open>
+          <summary>Message vocal à laisser</summary>
+          <p>{voicemailText}</p>
+        </details>
+      )}
+
+      {objectionOptions && (
+        <fieldset className="objection-block" disabled={disabled}>
+          <legend className="field-label">
+            Objections entendues <span className="muted xs">({objections.length}/{MAX_OBJECTIONS})</span>
+          </legend>
+          <div className="objection-chips">
+            {[...objectionOptions, ...objections.filter((o) => !objectionOptions.some((x) => x.toLowerCase() === o.toLowerCase()))].map((label) => {
+              const on = objections.some((o) => o.toLowerCase() === label.toLowerCase())
+              return (
+                <button key={label} type="button" className="objection-chip" aria-pressed={on} disabled={!on && objections.length >= MAX_OBJECTIONS} onClick={() => toggleObjection(label)}>
+                  {label}
+                </button>
+              )
+            })}
+          </div>
+          <div className="row" style={{ gap: 6 }}>
+            <input
+              className="input"
+              style={{ flex: 1, minWidth: 0 }}
+              value={otherObjection}
+              maxLength={MAX_OBJECTION_LENGTH}
+              onChange={(e) => setOtherObjection(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  addOther()
+                }
+              }}
+              placeholder="Autre objection…"
+              aria-label="Autre objection"
+              autoComplete="off"
+            />
+            <button type="button" className="btn btn-sm" onClick={addOther} disabled={!otherObjection.trim() || objections.length >= MAX_OBJECTIONS}>
+              Ajouter
+            </button>
+          </div>
+        </fieldset>
+      )}
 
       <div className="outcome-fields">
         <label className="field">

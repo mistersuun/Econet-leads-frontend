@@ -23,6 +23,8 @@ const TenderDetailDrawer = lazy(() => import('./pages/TenderDetailDrawer'))
 const ImportPage = lazy(() => import('./pages/ImportPage'))
 const DiscoverPage = lazy(() => import('./pages/DiscoverPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
+const ClientsPage = lazy(() => import('./pages/ClientsPage'))
+const ClientDetailDrawer = lazy(() => import('./pages/ClientDetailDrawer'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -98,11 +100,21 @@ export default function App() {
                 <Route
                   path="settings/:tab?"
                   element={
-                    <RequireAuth roles={['ADMIN']}>
+                    <RequireAuth>
                       <SettingsPage />
                     </RequireAuth>
                   }
                 />
+                <Route
+                  path="clients"
+                  element={
+                    <RequireAuth roles={['ADMIN', 'USER']}>
+                      <ClientsPage />
+                    </RequireAuth>
+                  }
+                >
+                  <Route path=":id" element={<ClientDetailDrawer />} />
+                </Route>
                 <Route path="*" element={<NotFoundPage />} />
               </Route>
             </Routes>

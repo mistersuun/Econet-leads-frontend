@@ -6,12 +6,16 @@ import { LEAD_STATUSES, type BusinessDTO, type LeadStatus } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { CallHistory } from '../components/CallHistory'
 import { EmailComposer } from '../components/EmailComposer'
+import { SmsFollowUpSheet } from '../components/SmsFollowUpSheet'
+import { GoogleCard } from '../components/GoogleCard'
 import { LeadCard } from '../components/LeadCard'
+import { LeadSalesPanel } from '../components/quotes/LeadSalesPanel'
 import { OutcomeForm } from '../components/OutcomeForm'
 import { EmptyState, ErrorState, SkeletonRows } from '../components/States'
 import { useToast } from '../components/Toast'
-import { IconMail, IconPhone, IconX } from '../components/icons'
+import { IconMail, IconMessage, IconPhone, IconX } from '../components/icons'
 import { errorMessage } from '../lib/errors'
+import { smsPhone } from '../lib/smsPhone'
 import { formatCurrency, formatDateTime } from '../lib/format'
 import { STATUS_META } from '../lib/status'
 import './lead-detail.css'
@@ -155,6 +159,7 @@ export default function LeadDetailDrawer() {
   const canEdit = hasRole('ADMIN', 'USER')
   const [calling, setCalling] = useState(false)
   const [composing, setComposing] = useState(false)
+  const [texting, setTexting] = useState(false)
   const closeRef = useRef<HTMLButtonElement>(null)
 
   const lead = useQuery({ queryKey: ['lead', id], queryFn: () => getLead(id!), enabled: !!id })
@@ -199,7 +204,7 @@ export default function LeadDetailDrawer() {
             <div className="stack">
               <section className="card card-pad">
                 <LeadCard lead={lead.data} />
-                <div className="row" style={{ marginTop: 24 }}>
+                <div className="row wrap" style={{ marginTop: 24 }}>
                   {!calling ? (
                     <button type="button" className="btn btn-primary" onClick={() => setCalling(true)} disabled={!canEdit} title={canEdit ? undefined : 'Lecture seule'}>
                       <IconPhone size={17} /> Appeler maintenant
@@ -210,8 +215,13 @@ export default function LeadDetailDrawer() {
                   <button type="button" className="btn" onClick={() => setComposing(true)} disabled={!canEdit} title={canEdit ? undefined : 'Lecture seule'}>
                     <IconMail size={17} /> Envoyer un courriel
                   </button>
+                  <button type="button" className="btn" onClick={() => setTexting(true)} disabled={!canEdit || !smsPhone(lead.data)} title={canEdit ? (smsPhone(lead.data) ? undefined : 'Aucun numéro de téléphone') : 'Lecture seule'}>
+                    <IconMessage size={17} /> Texto de suivi
+                  </button>
                 </div>
               </section>
+
+              <GoogleCard lead={lead.data} canEdit={canEdit} />
 
               {calling && (
                 <section className="card card-pad" aria-label="Enregistrer un appel">
@@ -234,6 +244,8 @@ export default function LeadDetailDrawer() {
                 <StatusEditor key={`s-${lead.data.leadStatus}`} lead={lead.data} canEdit={canEdit} />
                 <DealEditor key={`d-${lead.data.estimatedValue}-${lead.data.assignedToId}`} lead={lead.data} canEdit={canEdit} />
               </section>
+
+              <LeadSalesPanel lead={lead.data} canEdit={canEdit} />
 
               <section className="card card-pad">
                 <h3 style={{ marginBottom: 16 }}>Historique</h3>
@@ -264,6 +276,7 @@ export default function LeadDetailDrawer() {
         </div>
       </aside>
       {composing && lead.data && <EmailComposer lead={lead.data} onClose={() => setComposing(false)} />}
+      {texting && lead.data && <SmsFollowUpSheet lead={lead.data} onClose={() => setTexting(false)} />}
     </>
   )
 }

@@ -52,6 +52,8 @@ export interface RequestOptions {
   /** Skip the Authorization header and the refresh flow (login/refresh). */
   anonymous?: boolean
   signal?: AbortSignal
+  /** Let the request outlive the page (small payloads only): used to flush a log while the tab closes. */
+  keepalive?: boolean
 }
 
 const AUTH_PATHS = ['/api/auth/login', '/api/auth/refresh']
@@ -117,6 +119,7 @@ function send(path: string, opts: RequestOptions): Promise<Response> {
     headers,
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
     signal: opts.signal,
+    keepalive: opts.keepalive,
   })
 }
 

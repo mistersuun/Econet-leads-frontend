@@ -13,6 +13,7 @@ import {
   sessionQueueParams,
   sessionSummaryText,
   summarizeSession,
+  undoCall,
   type CallSession,
 } from './callSession'
 
@@ -127,5 +128,15 @@ describe('queue params and formatting', () => {
     expect(text).toContain('Appels : 2 · joints : 1 · conversations : 1 / 3')
     expect(text).toContain('Contrat gagné : 1')
     expect(text).toContain('Durée moyenne d’appel : 5 min')
+  })
+})
+
+describe('undoCall', () => {
+  it('removes only the latest call of that lead', () => {
+    let s = withCalls([{ o: 'NO_ANSWER' }, { o: 'VOICEMAIL' }])
+    s = recordCall(s, { leadId: 'l0', leadName: 'Lead 0', outcome: 'CALLBACK', durationSeconds: null, at: T0 + 9 })
+    const undone = undoCall(s, 'l0')
+    expect(undone.calls.map((c) => c.outcome)).toEqual(['NO_ANSWER', 'VOICEMAIL'])
+    expect(undoCall(undone, 'unknown')).toBe(undone)
   })
 })

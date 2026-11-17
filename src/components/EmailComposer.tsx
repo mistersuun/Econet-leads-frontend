@@ -55,6 +55,8 @@ interface Props {
   defaultTo?: string | null
   defaultLanguage?: ScriptLanguage
   defaultTemplate?: EmailTemplateKey
+  /** Pre-filled "note supplémentaire" (e.g. the booking link). */
+  defaultExtraNote?: string
   onClose: () => void
   onSent?: () => void
 }
@@ -69,7 +71,7 @@ function useDebounced<T>(value: T, ms: number): T {
 }
 
 /** Drawer: template, language, recipient, optional estimate + visit, live preview, send. */
-export function EmailComposer({ lead, defaultTo, defaultLanguage, defaultTemplate, onClose, onSent }: Props) {
+export function EmailComposer({ lead, defaultTo, defaultLanguage, defaultTemplate, defaultExtraNote, onClose, onSent }: Props) {
   const toast = useToast()
   const qc = useQueryClient()
   const closeRef = useRef<HTMLButtonElement>(null)
@@ -86,7 +88,7 @@ export function EmailComposer({ lead, defaultTo, defaultLanguage, defaultTemplat
   })
   const [withVisit, setWithVisit] = useState(defaultTemplate === 'visit_confirmation')
   const [visitAt, setVisitAt] = useState('')
-  const [extraNote, setExtraNote] = useState('')
+  const [extraNote, setExtraNote] = useState(defaultExtraNote ?? '')
 
   const status = useQuery({ queryKey: ['email-status'], queryFn: getEmailStatus, staleTime: 5 * 60_000 })
 

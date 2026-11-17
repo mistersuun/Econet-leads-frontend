@@ -29,7 +29,10 @@ import { useToast } from '../components/Toast'
 import { errorMessage } from '../lib/errors'
 import { formatRelative } from '../lib/format'
 import { placeholderKeys } from '../lib/placeholders'
+import AccountTab from './AccountTab'
+import AvailabilitySection from './AvailabilitySection'
 import TeamSection from './TeamSection'
+import IntegrationsSection from './IntegrationsSection'
 import './settings.css'
 
 const TABS = [
@@ -37,10 +40,14 @@ const TABS = [
   { key: 'emails', label: 'Modèles de courriel' },
   { key: 'targets', label: 'Objectifs' },
   { key: 'team', label: 'Équipe' },
+  { key: 'account', label: 'Mon compte' },
+  { key: 'integrations', label: 'Intégrations' },
+  { key: 'availability', label: 'Disponibilités' },
 ] as const
+const NON_ADMIN_TABS: readonly string[] = ['account']
 type Tab = (typeof TABS)[number]['key']
 
-const SECTION_LABEL: Record<ScriptSectionKey, string> = { opening: 'Ouverture', questions: 'Questions', objections: 'Objections', closing: 'Clôture' }
+const SECTION_LABEL: Record<ScriptSectionKey, string> = { opening: 'Ouverture', questions: 'Questions', objections: 'Objections', closing: 'Clôture', voicemail: 'Message vocal' }
 const PLACEHOLDERS: { key: string; help: string }[] = [
   { key: 'businessName', help: 'nom de l’entreprise' },
   { key: 'city', help: 'ville du lead' },
@@ -53,6 +60,8 @@ const EMAIL_PLACEHOLDERS: { key: string; help: string }[] = [
   { key: 'estimate', help: 'lignes de l’estimation (si incluse)' },
   { key: 'visitAt', help: 'date de visite en toutes lettres' },
   { key: 'extraNote', help: 'note ajoutée par l’agent' },
+  { key: 'quoteLink', help: 'lien d’acceptation de la dernière soumission ouverte (ligne retirée s’il n’y en a pas)' },
+  { key: 'bookingLink', help: 'lien de réservation actif (ligne retirée s’il n’y en a pas)' },
 ]
 
 export default function SettingsPage() {
@@ -60,11 +69,12 @@ export default function SettingsPage() {
   const navigate = useNavigate()
   const { hasRole } = useAuth()
   const isAdmin = hasRole('ADMIN')
-  const tabs = TABS.filter((t) => t.key !== 'team' || isAdmin)
-  const current: Tab = (tabs.find((t) => t.key === tab)?.key ?? 'scripts') as Tab
+  const tabs = TABS.filter((t) => isAdmin || NON_ADMIN_TABS.includes(t.key))
+  const fallback: Tab = isAdmin ? 'scripts' : 'account'
+  const current: Tab = (tabs.find((t) => t.key === tab)?.key ?? fallback) as Tab
   useEffect(() => {
-    if (!tab) navigate('/settings/scripts', { replace: true })
-  }, [tab, navigate])
+    if (!tab) navigate(`/settings/${fallback}`, { replace: true })
+  }, [tab, navigate, fallback])
 
   return (
     <div className="page settings">
@@ -81,10 +91,13 @@ export default function SettingsPage() {
           </NavLink>
         ))}
       </nav>
-      {current === 'scripts' && <ScriptsTab />}
-      {current === 'emails' && <EmailsTab />}
-      {current === 'targets' && <TargetsTab />}
+      {current === 'scripts' && isAdmin && <ScriptsTab />}
+      {current === 'emails' && isAdmin && <EmailsTab />}
+      {current === 'targets' && isAdmin && <TargetsTab />}
       {current === 'team' && isAdmin && <TeamSection />}
+      {current === 'account' && <AccountTab />}
+      {current === 'integrations' && isAdmin && <IntegrationsSection />}
+      {current === 'availability' && isAdmin && <AvailabilitySection />}
     </div>
   )
 }

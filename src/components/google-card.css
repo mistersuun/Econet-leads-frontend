@@ -1,0 +1,73 @@
+.google-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.google-head .btn {
+  align-self: center;
+}
+.google-empty {
+  margin: 0;
+}
+.google-empty code {
+  font-size: var(--text-sm);
+  background: var(--surface);
+  padding: 1px 6px;
+  border-radius: 6px;
+}
+.google-rating {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.google-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xl, 1.25rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.google-closed {
+  color: var(--danger, #c4613f);
+  font-weight: 500;
+}
+.google-hours summary {
+  cursor: pointer;
+  color: var(--ink-2);
+}
+.google-hours ul {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 2px;
+  color: var(--ink-2);
+}
+.google-signals-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.google-quotes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.google-quotes li {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+.google-quotes blockquote {
+  margin: 0 0 4px;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.google-foot {
+  margin: 12px 0 0;
+}
